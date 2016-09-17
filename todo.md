@@ -1,0 +1,4 @@
+- [] add speedmeter
+- [] add position?
+- [] add random obstacles
+- [] add AI
