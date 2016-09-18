@@ -1,4 +1,6 @@
-- [] add speedmeter
-- [] add position?
-- [] add random obstacles
-- [] add AI
+- [ ] deal with backward moving
+- [ ] add wall detection
+- [ ] add speedmeter
+- [ ] add position?
+- [ ] add random obstacles
+- [ ] add AI
