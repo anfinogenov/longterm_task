@@ -3,13 +3,14 @@
 #include <stdlib.h>
 #include <time.h>
 const char outChar = 'A';
-const int wallsWidth = 7;
+const int wallsWidth = 10;
 
 int movePlayer (int key, int *x, int *y);
 void printWalls (void);
 
 int main (int argc, char* argv[]) {
 	const long int startTime = time(NULL);
+
 	FILE* fout;
 	if((fout = fopen("log.txt", "w")) == NULL) {
 		fprintf(stderr, "cannot open log file\n");
@@ -20,7 +21,8 @@ int main (int argc, char* argv[]) {
 		fprintf(fout, "initscr() failure\n");
 		exit(2);
 	}
-
+	noecho();
+	cbreak();
 	keypad(stdscr, TRUE);
 	int x, y, key;
 	x = LINES/2; y = COLS/2;
@@ -41,10 +43,11 @@ int main (int argc, char* argv[]) {
 }
 
 int movePlayer (int key, int *x, int *y) {
-	if (key == KEY_DOWN) *x = (*x + 1) % LINES;
-	else if (key == KEY_UP) *x = (*x + LINES - 1) % LINES;
-	else if (key == KEY_RIGHT) *y = (*y + 1) % COLS;
-	else if (key == KEY_LEFT) *y = (*y + COLS - 1) % COLS;
+	int temp;
+	if (key == KEY_DOWN) { temp = (*x + 1) % LINES; if (1);}
+	else if (key == KEY_UP) { *x = (*x + LINES - 1) % LINES; }
+	else if (key == KEY_RIGHT) { *y = (*y + 1) % COLS; }
+	else if (key == KEY_LEFT) { *y = (*y + COLS - 1) % COLS; }
 	else return 1;
 	return 0;
 }
