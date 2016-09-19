@@ -3,19 +3,19 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
+#include <string>
 
 const char playerChar = 'A';
 const char wallChar = 'X';
 const int wallsWidth = 10;
+const long int startTime = time(NULL);
 
 int 	movePlayer (int key, int &x, int &y);
 void 	printWalls (void);
 int 	isWall (const int &x, const int &y);
-void	warningMsg (const string & msg);
-void	errorMsg (const string & msg);
+void	logMessage (std::ofstream & fout, const std::string & msg, char msgType);
 
 int main (int argc, char* argv[]) {
-	const long int startTime = time(NULL);
 
 	std::ofstream fout("log.txt");
 	if(!fout.is_open()) {
@@ -27,9 +27,7 @@ int main (int argc, char* argv[]) {
 		fout << "initscr() failure\n";
 		exit(2);
 	}
-	fout << "1N [" << time(NULL) - startTime << "] initscr() executed normally\n";
-
-
+	logMessage (fout, "initscr executed normally", 'n');
 	noecho(); curs_set(0); cbreak();
 	keypad(stdscr, TRUE);
 
@@ -39,12 +37,12 @@ int main (int argc, char* argv[]) {
 		clear();
 		printWalls();
 //		mvaddch(x, y, ' ');
-		if (movePlayer(key, x, y)) fout << "2W [" << time(NULL) - startTime << "] pressed non-arrow button\n";
+		if (movePlayer(key, x, y)) logMessage (fout, "pressed non-arrow button", 'w');
 		mvaddch(x, y, playerChar);
 		refresh();
 	}
 	endwin();
-	fout << "1N [" << time(NULL) - startTime << "] program exited normally\n";
+	logMessage (fout, "program exited normally", 'n');
 	fout.close();
 
 	return 0;
@@ -83,4 +81,15 @@ int isWall (const int &x, const int &y) {
 	move(x ,y);
 	if(inch() != ' ') return 1;
 	return 0;
+}
+
+void logMessage (std::ofstream & fout, const std::string & msg, char msgType) {
+	std::string type;
+	switch (msgType) {
+		case 'n': type = "okay"; break;
+		case 'w': type = "warn"; break;
+		case 'e': type = "err "; break;
+		default : type = "unkn"; break;
+	}
+	fout << type + " [" << time(NULL) - startTime << "]: " << msg << std::endl;
 }
