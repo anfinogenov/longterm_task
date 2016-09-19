@@ -1,4 +1,5 @@
-- [ ] deal with backward moving
+- [ ] rewrite to cpp
+- [x] deal with backward moving
 - [ ] add wall detection
 - [ ] add speedmeter
 - [ ] add position?
