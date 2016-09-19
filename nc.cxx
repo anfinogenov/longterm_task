@@ -4,12 +4,15 @@
 #include <cstdlib>
 #include <ctime>
 
-const char outChar = 'A';
+const char playerChar = 'A';
+const char wallChar = 'X';
 const int wallsWidth = 10;
 
 int 	movePlayer (int key, int &x, int &y);
 void 	printWalls (void);
 int 	isWall (const int &x, const int &y);
+void	warningMsg (const string & msg);
+void	errorMsg (const string & msg);
 
 int main (int argc, char* argv[]) {
 	const long int startTime = time(NULL);
@@ -37,7 +40,7 @@ int main (int argc, char* argv[]) {
 		printWalls();
 //		mvaddch(x, y, ' ');
 		if (movePlayer(key, x, y)) fout << "2W [" << time(NULL) - startTime << "] pressed non-arrow button\n";
-		mvaddch(x, y, outChar);
+		mvaddch(x, y, playerChar);
 		refresh();
 	}
 	endwin();
@@ -71,8 +74,8 @@ int movePlayer (int key, int &x, int &y) {
 
 void printWalls () {
 	for (int i = 0; i < LINES; i++) {
-		mvaddch(i, (COLS/2) - wallsWidth, 'B');
-		mvaddch(i, (COLS/2) + wallsWidth, 'B');
+		mvaddch(i, (COLS/2) - wallsWidth, wallChar);
+		mvaddch(i, (COLS/2) + wallsWidth, wallChar);
 	}
 }
 

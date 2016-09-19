@@ -1,6 +1,7 @@
 - [x] rewrite to cpp
 - [x] deal with backward moving
 - [x] add wall detection
+- [ ] rewrite log messages
 - [ ] add speedmeter
 - [ ] add position?
 - [ ] add random obstacles
