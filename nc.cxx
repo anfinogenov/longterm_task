@@ -77,6 +77,7 @@ void printWalls () {
 }
 
 int isWall (const int &x, const int &y) {
-//	if (mvinch(y, x) != ' ') return 0;
+	move(x ,y);
+	if(inch() != ' ') return 1;
 	return 0;
 }

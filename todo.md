@@ -1,6 +1,6 @@
 - [x] rewrite to cpp
 - [x] deal with backward moving
-- [ ] add wall detection
+- [x] add wall detection
 - [ ] add speedmeter
 - [ ] add position?
 - [ ] add random obstacles
