@@ -24,6 +24,8 @@ int main (int argc, char* argv[]) {
 		fout << "initscr() failure\n";
 		exit(2);
 	}
+	fout << "1N [" << time(NULL) - startTime << "] initscr() executed normally\n";
+
 
 	noecho(); curs_set(0); cbreak();
 	keypad(stdscr, TRUE);
@@ -34,13 +36,12 @@ int main (int argc, char* argv[]) {
 		clear();
 		printWalls();
 //		mvaddch(x, y, ' ');
-		if (movePlayer(key, x, y)) fout << '[' << time(NULL) - startTime << "] pressed non-arrow button\n";
+		if (movePlayer(key, x, y)) fout << "2W [" << time(NULL) - startTime << "] pressed non-arrow button\n";
 		mvaddch(x, y, outChar);
 		refresh();
 	}
 	endwin();
-
-	fout << '[' << time(NULL) - startTime << "] program exited normally\n";
+	fout << "1N [" << time(NULL) - startTime << "] program exited normally\n";
 	fout.close();
 
 	return 0;
