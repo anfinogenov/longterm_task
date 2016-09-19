@@ -24,7 +24,7 @@ int main (int argc, char* argv[]) {
 	}
 
 	if(!initscr()) {
-		fout << "initscr() failure\n";
+		logMessage (fout, "initscr() failure", 'e');
 		exit(2);
 	}
 	logMessage (fout, "initscr executed normally", 'n');
@@ -32,7 +32,7 @@ int main (int argc, char* argv[]) {
 	keypad(stdscr, TRUE);
 
 	int x, y, key;
-	x = LINES/2; y = COLS/2;
+	x = 2*LINES/3; y = COLS/2;
 	while ((key = getch()) != 'q') {
 		clear();
 		printWalls();
