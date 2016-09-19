@@ -1,4 +1,4 @@
-- [ ] rewrite to cpp
+- [x] rewrite to cpp
 - [x] deal with backward moving
 - [ ] add wall detection
 - [ ] add speedmeter

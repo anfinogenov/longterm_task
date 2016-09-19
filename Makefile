@@ -1,2 +1,2 @@
-dd3o.exe: nc.c
-	gcc -o dd3o.exe nc.c -lncurses -std=c99
+dd3o.exe: nc.cxx
+	g++ -o dd3o.exe nc.cxx -lncurses -std=c++11
