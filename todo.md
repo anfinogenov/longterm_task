@@ -2,7 +2,7 @@
 - [x] deal with backward moving
 - [x] add wall detection
 - [x] rewrite log messages
+- [ ] add random obstacles
 - [ ] add speedmeter
 - [ ] add position?
-- [ ] add random obstacles
 - [ ] add AI
