@@ -100,7 +100,7 @@ int movePlayer (int key) {
 }
 
 void printWalls () {
-	//border (wallChar, wallChar, wallChar, wallChar, 'x', 'x', 'x', 'x');
+	border (wallChar, wallChar, wallChar, wallChar, 'x', 'x', 'x', 'x');
 	for (int i = 0; i < LINES; i++) {
 		mvaddch(i, (COLS/2) - wallsWidth/2 - 1, wallChar);
 		mvaddch(i, (COLS/2) + wallsWidth/2 + 1, wallChar);
