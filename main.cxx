@@ -11,10 +11,10 @@ const char	playerChar	= 'A';
 const char	wallChar	= 'x';
 const int	wallsWidth	= 19; //only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 10;
+const int	fps		= 50;
 
-static int player_x = 10;
-static int player_y = 10;
+static int global_player_x = 10;
+static int global_player_y = 10;
 
 void*	multithread_movement (void* arg); 
 int 	movePlayer (int key);
@@ -39,17 +39,25 @@ int main (int argc, char* argv[]) {
 	noecho(); curs_set(0); cbreak();
 	keypad(stdscr, TRUE);
 
-	player_x = 2*LINES/3; 
-	player_y = COLS/2;
+	global_player_x = 2*LINES/3; 
+	global_player_y = COLS/2;
+	int local_player_x = global_player_x;
+	int local_player_y = global_player_y;
 
 	pthread_t move_thread;
 	pthread_create(&move_thread, NULL, multithread_movement, NULL);
 
 	while (true) {
-		clear(); //clears screen before next refresh()
+		//clear(); //clears screen before next refresh()
 		printWalls(); //adds walls to refresh buffer
-		mvaddch(player_x, player_y, playerChar);
 
+		if (local_player_x != global_player_x || local_player_y != global_player_y) {
+			mvaddch(local_player_x, local_player_y, ' ');
+			mvaddch(global_player_x, global_player_y, playerChar);
+			local_player_x = global_player_x;
+			local_player_y = global_player_y;
+		}
+				
 		refresh(); //put changes on screen
 
 		napms(1000/fps); //make moves 30 times per second
@@ -66,8 +74,8 @@ int main (int argc, char* argv[]) {
 void* multithread_movement (void* arg) {
 	int key;
 	while (true) {
-		key = getch();
 		napms(1000/fps);
+		key = getch();
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 		movePlayer (key);
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -80,27 +88,27 @@ int movePlayer (int key) {
 	int new_coord; //temp variable to store coordinate where player wants to move in
 	switch (key) {
 		case KEY_DOWN:
-			new_coord = (player_x+1) % LINES;
-			if (!isWall(new_coord, player_y)) player_x = new_coord;
+			new_coord = (global_player_x + 1) % LINES;
+			if (!isWall(new_coord, global_player_y)) global_player_x = new_coord;
 			break;
 		case KEY_UP:
-			new_coord = (player_x-1) % LINES;
-			if (!isWall(new_coord, player_y)) player_x = new_coord;
+			new_coord = (global_player_x + LINES - 1) % LINES;
+			if (!isWall(new_coord, global_player_y)) global_player_x = new_coord;
 			break;
 		case KEY_RIGHT:
-			new_coord = (player_y+1) % COLS;
-			if (!isWall(player_x, new_coord)) player_y = new_coord;
+			new_coord = (global_player_y + 1) % COLS;
+			if (!isWall(global_player_x, new_coord)) global_player_y = new_coord;
 			break;
 		case KEY_LEFT:
-			new_coord = (player_y-1) % COLS;
-			if (!isWall(player_x, new_coord)) player_y = new_coord;
+			new_coord = (global_player_y + COLS - 1) % COLS;
+			if (!isWall(global_player_x, new_coord)) global_player_y = new_coord;
 			break;
 		default: break;
 	}
 }
 
 void printWalls () {
-	border (wallChar, wallChar, wallChar, wallChar, 'x', 'x', 'x', 'x');
+	//border (wallChar, wallChar, wallChar, wallChar, 'x', 'x', 'x', 'x');
 	for (int i = 0; i < LINES; i++) {
 		mvaddch(i, (COLS/2) - wallsWidth/2 - 1, wallChar);
 		mvaddch(i, (COLS/2) + wallsWidth/2 + 1, wallChar);
