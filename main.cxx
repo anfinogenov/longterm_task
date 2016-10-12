@@ -8,10 +8,10 @@
 #include <pthread.h>
 
 const char	playerChar	= 'A';
-const char	wallChar	= 'x';
+const char 	wallChar	= '|';
 const int	wallsWidth	= 19; //only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 50;
+const int	fps		= 20;
 
 static int global_player_x = 10;
 static int global_player_y = 10;
@@ -24,6 +24,7 @@ int	isWall (const int &x, const int &y);
 
 int main (int argc, char* argv[]) {
 
+	setlocale(LC_ALL, "");
 	srand(time(NULL));
 	std::ofstream fout("log.txt");
 	if(!fout.is_open()) {
@@ -47,15 +48,18 @@ int main (int argc, char* argv[]) {
 	pthread_t move_thread;
 	pthread_create(&move_thread, NULL, multithread_movement, NULL);
 
-	while (true) {
-		//clear(); //clears screen before next refresh()
-		printWalls(); //adds walls to refresh buffer
+	while (global_player_x > -1) {
+		mvaddch(local_player_x, local_player_y, ' ');
 
+		printWalls(); //adds walls to refresh buffer
+		
 		if (local_player_x != global_player_x || local_player_y != global_player_y) {
 			mvaddch(local_player_x, local_player_y, ' ');
 			mvaddch(global_player_x, global_player_y, playerChar);
 			local_player_x = global_player_x;
 			local_player_y = global_player_y;
+		} else {
+			mvaddch(local_player_x, local_player_y, playerChar);
 		}
 				
 		refresh(); //put changes on screen
@@ -79,6 +83,7 @@ void* multithread_movement (void* arg) {
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 		movePlayer (key);
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+		if (tolower(key) =='q') global_player_x = -1;
 		flushinp(); // removes any unattended input
 	}
 	return NULL;
@@ -108,14 +113,12 @@ int movePlayer (int key) {
 }
 
 void printWalls () {
-	//border (wallChar, wallChar, wallChar, wallChar, 'x', 'x', 'x', 'x');
+	move(0, 0);
+	insertln();
 	for (int i = 0; i < LINES; i++) {
 		mvaddch(i, (COLS/2) - wallsWidth/2 - 1, wallChar);
 		mvaddch(i, (COLS/2) + wallsWidth/2 + 1, wallChar);
 	}
-
-	//for (int i = 0; i < LINES; i++)
-	//	for (int j = 0; j < COLS; j++) if (rand()%10 == 1) mvaddch(i, j, wallChar);
 }
 
 int isWall (const int &x, const int &y) {
