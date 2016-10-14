@@ -1,8 +1,5 @@
-- [x] rewrite to cpp
-- [x] deal with backward moving
-- [x] add wall detection
-- [x] rewrite log messages
-- [ ] add random obstacles
-- [ ] add speedmeter
-- [ ] add position?
+- [ ] add random obstacles on first line
+- [ ] add points detection
+- [ ] add speedmeter (speed depends on time and points)
 - [ ] add AI
+- [ ] add highscores (depends on points)

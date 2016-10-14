@@ -12,6 +12,9 @@ const char 	wallChar	= '|';
 const int	wallsWidth	= 19; //only mod2 = 1
 const long int	startTime	= time(NULL);
 const int	fps		= 20;
+const int	minLines	= 15; //exit if less or equal
+
+std::ofstream fout;
 
 static int global_player_x = 10;
 static int global_player_y = 10;
@@ -27,7 +30,7 @@ int main (int argc, char* argv[]) {
 	
 	srand(time(NULL));
 
-	std::ofstream fout("log.txt");
+	fout.open("log.txt");
 	if(!fout.is_open()) {
 		std::cerr << "cannot open log file\n";
 		exit(1);
@@ -137,4 +140,13 @@ void logMessage (std::ofstream & fout, const std::string & msg, char msgType) {
 	}
 	fout << type + " [" << time(NULL) - startTime << "]: " << msg << std::endl;
 	//out message with msgType and time
+}
+
+void checkScreen () {
+	if (COLS < (wallsWidth+5) || LINES < minLines) {
+		logMessage (fout, "incorrect screen size", 'e');
+		endwin();
+		exit (4);
+	}
+	logMessage (fout, "screen size is correct", 'n');
 }
