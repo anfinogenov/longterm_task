@@ -17,15 +17,16 @@ static int global_player_x = 10;
 static int global_player_y = 10;
 
 void*	multithread_movement (void* arg); 
-int 	movePlayer (int key);
+int 	movePlayer (const int & key);
 void	logMessage (std::ofstream & fout, const std::string & msg, char msgType);
 void	printWalls (void);
 int	isWall (const int &x, const int &y);
+void	checkScreen (void);
 
 int main (int argc, char* argv[]) {
-
-	setlocale(LC_ALL, "");
+	
 	srand(time(NULL));
+
 	std::ofstream fout("log.txt");
 	if(!fout.is_open()) {
 		std::cerr << "cannot open log file\n";
@@ -40,6 +41,8 @@ int main (int argc, char* argv[]) {
 	noecho(); curs_set(0); cbreak();
 	keypad(stdscr, TRUE);
 
+	checkScreen();
+
 	global_player_x = 2*LINES/3; 
 	global_player_y = COLS/2;
 	int local_player_x = global_player_x;
@@ -53,14 +56,12 @@ int main (int argc, char* argv[]) {
 
 		printWalls(); //adds walls to refresh buffer
 		
-		if (local_player_x != global_player_x || local_player_y != global_player_y) {
-			mvaddch(local_player_x, local_player_y, ' ');
-			mvaddch(global_player_x, global_player_y, playerChar);
+		if (local_player_x != global_player_x || local_player_y != global_player_y) {	
 			local_player_x = global_player_x;
 			local_player_y = global_player_y;
-		} else {
-			mvaddch(local_player_x, local_player_y, playerChar);
 		}
+		
+		mvaddch(local_player_x, local_player_y, playerChar);
 				
 		refresh(); //put changes on screen
 
@@ -89,7 +90,7 @@ void* multithread_movement (void* arg) {
 	return NULL;
 }
 
-int movePlayer (int key) {
+int movePlayer (const int & key) {
 	int new_coord; //temp variable to store coordinate where player wants to move in
 	switch (key) {
 		case KEY_DOWN:
@@ -113,8 +114,7 @@ int movePlayer (int key) {
 }
 
 void printWalls () {
-	move(0, 0);
-	insertln();
+	move(0, 0); insertln();
 	for (int i = 0; i < LINES; i++) {
 		mvaddch(i, (COLS/2) - wallsWidth/2 - 1, wallChar);
 		mvaddch(i, (COLS/2) + wallsWidth/2 + 1, wallChar);
