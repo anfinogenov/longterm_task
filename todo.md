@@ -1,4 +1,4 @@
-- [ ] add random obstacles on first line
+- [ ] add random obstacles on first line + detection
 - [ ] add points detection
 - [ ] add speedmeter (speed depends on time and points)
 - [ ] add AI

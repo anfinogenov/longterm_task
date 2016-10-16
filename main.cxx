@@ -8,10 +8,11 @@
 #include <pthread.h>
 
 const char	playerChar	= 'A';
+const char	obstacleChar	= '#';
 const char 	wallChar	= '|';
 const int	wallsWidth	= 19; //only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 20;
+const int	fps		= 10;
 const int	minLines	= 15; //exit if less or equal
 
 static std::ofstream fout;
@@ -19,9 +20,11 @@ static int global_player_x = 10;
 static int global_player_y = 10;
 static int difficulty;
 static int current_points;
+static int counter = 0;
 
 void*	multithread_movement (void* arg); 
 int 	movePlayer (const int & key);
+void	checkPlayer (int & local_x, int & local_y) { return; }
 void	logMessage (std::ofstream & fout, const std::string & msg, char msgType);
 void	printWalls (void);
 void	generateNewLine (void);
@@ -60,7 +63,9 @@ int main (int argc, char* argv[]) {
 		mvaddch(local_player_x, local_player_y, ' ');
 
 		printWalls(); //adds walls to refresh buffer
-		
+	
+		checkPlayer(local_player_x, local_player_y);
+
 		if (local_player_x != global_player_x || local_player_y != global_player_y) {	
 			local_player_x = global_player_x;
 			local_player_y = global_player_y;
@@ -70,7 +75,7 @@ int main (int argc, char* argv[]) {
 				
 		refresh(); //put changes on screen
 
-		napms(1000/fps); //make moves 30 times per second
+		napms(1000/fps); //make moves fps times per second
 		flushinp(); //remove any unattended input
 	}
 	pthread_cancel(move_thread);
@@ -128,6 +133,7 @@ void printWalls () {
 
 void generateNewLine () {
 	move(0,0); insertln();
+	if (!(counter++ % 5)) mvaddch(0, COLS/2 - wallsWidth/2, obstacleChar);
 }
 
 int isWall (const int &x, const int &y) {
