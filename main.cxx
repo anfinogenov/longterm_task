@@ -14,15 +14,17 @@ const long int	startTime	= time(NULL);
 const int	fps		= 20;
 const int	minLines	= 15; //exit if less or equal
 
-std::ofstream fout;
-
+static std::ofstream fout;
 static int global_player_x = 10;
 static int global_player_y = 10;
+static int difficulty;
+static int current_points;
 
 void*	multithread_movement (void* arg); 
 int 	movePlayer (const int & key);
 void	logMessage (std::ofstream & fout, const std::string & msg, char msgType);
 void	printWalls (void);
+void	generateNewLine (void);
 int	isWall (const int &x, const int &y);
 void	checkScreen (void);
 
@@ -117,11 +119,15 @@ int movePlayer (const int & key) {
 }
 
 void printWalls () {
-	move(0, 0); insertln();
+	generateNewLine();
 	for (int i = 0; i < LINES; i++) {
 		mvaddch(i, (COLS/2) - wallsWidth/2 - 1, wallChar);
 		mvaddch(i, (COLS/2) + wallsWidth/2 + 1, wallChar);
 	}
+}
+
+void generateNewLine () {
+	move(0,0); insertln();
 }
 
 int isWall (const int &x, const int &y) {
