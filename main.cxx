@@ -24,7 +24,7 @@ static int counter = 0;
 
 void*	multithread_movement (void* arg); 
 int 	movePlayer (const int & key);
-void	checkPlayer (int & local_x, int & local_y) { return; }
+void	checkPlayer (int & local_x, int & local_y);
 void	logMessage (std::ofstream & fout, const std::string & msg, char msgType);
 void	printWalls (void);
 void	generateNewLine (void);
@@ -99,6 +99,8 @@ void* multithread_movement (void* arg) {
 	}
 	return NULL;
 }
+
+void checkPlayer (int & local_x, int & local_y) { return; } //TODO: check if there are any collisions with walls
 
 int movePlayer (const int & key) {
 	int new_coord; //temp variable to store coordinate where player wants to move in
