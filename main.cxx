@@ -11,11 +11,11 @@
 const char	playerChar	= 'A';
 const char	obstacleChar	= '#';
 const char 	wallChar	= '|';
-const int	wallsWidth	= 19; //only mod2 = 1
+const int	wallsWidth	= 49; //only mod2 = 1
 const long int	startTime	= time(NULL);
 const int	fps		= 20;
 const int	minLines	= 15; //exit if less or equal
-const int	dif_modifier	= 15;
+const int	dif_modifier	= 10;
 
 static std::ofstream fout;
 static int global_player_x = 10;
@@ -153,9 +153,11 @@ void printWalls () {
 void generateNewLine () {
 	move(0,0); insertln();
 	int obstacle[wallsWidth] = {0};
+	int len = rand()%wallsWidth/2;
+	int start = rand()%wallsWidth + COLS/2 - wallsWidth/2;
 	if (!(counter++ % (difficulty * dif_modifier)))
-		for (int i = 0; i < wallsWidth; i++)
-			mvaddch(0, COLS/2 - wallsWidth/2 + i, obstacleChar);
+		for (int i = 0; i < len; i++)
+			mvaddch(0, start + i, obstacleChar);
 }
 
 int isWall (const int &x, const int &y) {
