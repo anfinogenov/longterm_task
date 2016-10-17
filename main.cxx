@@ -115,6 +115,7 @@ void checkPlayer (int & local_x, int & local_y) {
 int movePlayer (const int & key) {
 	int new_coord; //temp variable to store coordinate where player wants to move in
 	switch (key) {
+		/* commented until wall-deletion bug isn't solved
 		case KEY_DOWN:
 			new_coord = global_player_x + 1;
 			if (!isWall(new_coord, global_player_y)) global_player_x = new_coord;
@@ -123,6 +124,7 @@ int movePlayer (const int & key) {
 			new_coord = global_player_x - 1;
 			if (!isWall(new_coord, global_player_y)) global_player_x = new_coord;
 			break;
+		*/
 		case KEY_RIGHT:
 			new_coord = global_player_y + 1;
 			if (!isWall(global_player_x, new_coord)) global_player_y = new_coord;
