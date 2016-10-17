@@ -14,13 +14,15 @@ const int	wallsWidth	= 19; //only mod2 = 1
 const long int	startTime	= time(NULL);
 const int	fps		= 10;
 const int	minLines	= 15; //exit if less or equal
+const int	dif_modifier	= 15;
 
 static std::ofstream fout;
 static int global_player_x = 10;
 static int global_player_y = 10;
-static int difficulty;
+static int difficulty = 1;
 static int current_points;
 static int counter = 0;
+static bool exitFlag = false;
 
 void*	multithread_movement (void* arg); 
 int 	movePlayer (const int & key);
@@ -32,7 +34,8 @@ int	isWall (const int &x, const int &y);
 void	checkScreen (void);
 
 int main (int argc, char* argv[]) {
-	
+
+////// inititalization routines	
 	srand(time(NULL));
 
 	fout.open("log.txt");
@@ -48,8 +51,8 @@ int main (int argc, char* argv[]) {
 	logMessage (fout, "initscr executed normally", 'n');
 	noecho(); curs_set(0); cbreak();
 	keypad(stdscr, TRUE);
-
-	checkScreen();
+	checkScreen(); 
+////// end of routines
 
 	global_player_x = 2*LINES/3; 
 	global_player_y = COLS/2;
@@ -59,20 +62,19 @@ int main (int argc, char* argv[]) {
 	pthread_t move_thread;
 	pthread_create(&move_thread, NULL, multithread_movement, NULL);
 
-	while (global_player_x > -1) {
+	while (!exitFlag) {
 		mvaddch(local_player_x, local_player_y, ' ');
 
 		printWalls(); //adds walls to refresh buffer
-	
-		checkPlayer(local_player_x, local_player_y);
 
+		refresh(); //puts obstacles on screen
+		checkPlayer(local_player_x, local_player_y);
 		if (local_player_x != global_player_x || local_player_y != global_player_y) {	
 			local_player_x = global_player_x;
 			local_player_y = global_player_y;
 		}
-		
 		mvaddch(local_player_x, local_player_y, playerChar);
-				
+
 		refresh(); //put changes on screen
 
 		napms(1000/fps); //make moves fps times per second
@@ -94,31 +96,38 @@ void* multithread_movement (void* arg) {
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 		movePlayer (key);
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-		if (tolower(key) =='q') global_player_x = -1;
+		if (tolower(key) =='q') exitFlag = true;
 		flushinp(); // removes any unattended input
 	}
 	return NULL;
 }
 
-void checkPlayer (int & local_x, int & local_y) { return; } //TODO: check if there are any collisions with walls
+void checkPlayer (int & local_x, int & local_y) {
+	move (local_x, local_y);	
+	if (inch() != ' ') global_player_x++;
+	if (global_player_x >= LINES) { //global
+		logMessage (fout, "player fell out", 'n');
+		exitFlag = true;
+	}
+}
 
 int movePlayer (const int & key) {
 	int new_coord; //temp variable to store coordinate where player wants to move in
 	switch (key) {
 		case KEY_DOWN:
-			new_coord = (global_player_x + 1) % LINES;
+			new_coord = global_player_x + 1;
 			if (!isWall(new_coord, global_player_y)) global_player_x = new_coord;
 			break;
 		case KEY_UP:
-			new_coord = (global_player_x + LINES - 1) % LINES;
+			new_coord = global_player_x - 1;
 			if (!isWall(new_coord, global_player_y)) global_player_x = new_coord;
 			break;
 		case KEY_RIGHT:
-			new_coord = (global_player_y + 1) % COLS;
+			new_coord = global_player_y + 1;
 			if (!isWall(global_player_x, new_coord)) global_player_y = new_coord;
 			break;
 		case KEY_LEFT:
-			new_coord = (global_player_y + COLS - 1) % COLS;
+			new_coord = global_player_y - 1;
 			if (!isWall(global_player_x, new_coord)) global_player_y = new_coord;
 			break;
 		default: break;
@@ -135,7 +144,10 @@ void printWalls () {
 
 void generateNewLine () {
 	move(0,0); insertln();
-	if (!(counter++ % 5)) mvaddch(0, COLS/2 - wallsWidth/2, obstacleChar);
+	int obstacle[wallsWidth] = {0};
+	if (!(counter++ % (difficulty * dif_modifier)))
+		for (int i = 0; i < wallsWidth; i++)
+			mvaddch(0, COLS/2 - wallsWidth/2 + i, obstacleChar);
 }
 
 int isWall (const int &x, const int &y) {
