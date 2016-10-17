@@ -12,14 +12,14 @@ const char	obstacleChar	= '#';
 const char 	wallChar	= '|';
 const int	wallsWidth	= 49; //only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 30;
+const int	fps		= 15;
 const int	minLines	= 15; //exit if less or equal
-const int	dif_modifier	= 10;
+const int	dif_modifier	= 20;
 
 static std::ofstream fout;
 static int global_player_x = 10;
 static int global_player_y = 10;
-static int difficulty = 1;
+static int difficulty = 4;
 static int current_points;
 static int counter = 0;
 static bool exitFlag = false;
@@ -106,8 +106,10 @@ void* multithread_movement (void* arg) {
 void checkPlayer (int & local_x, int & local_y) {
 	move (local_x, local_y);	
 	if (inch() != ' ') global_player_x++;
-	if (global_player_x >= LINES) { //global
+	if (global_player_x >= LINES - 1) { //global
 		logMessage (fout, "player fell out", 'n');
+		//std::string = "counter is " + counter;
+		//logMessage //rewrite to frintf, fout >> or logMessage with strcat() C func
 		exitFlag = true;
 	}
 }
@@ -150,8 +152,8 @@ void generateNewLine () {
 	int obstacle[wallsWidth] = {0};
 	int len = rand()%wallsWidth/2;
 	int start = rand()%wallsWidth + COLS/2 - wallsWidth/2;
-	if (!(counter++ % (difficulty * dif_modifier)))
-		for (int i = 0; i < len; i++)
+	if (!(counter++ % (dif_modifier/difficulty)))
+		for (int i = 0; (i < len) && (start + i <= COLS/2 + wallsWidth/2); i++)
 			mvaddch(0, start + i, obstacleChar);
 }
 
