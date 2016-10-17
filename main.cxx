@@ -6,14 +6,13 @@
 #include <string>
 #include <cctype>
 #include <pthread.h>
-#include <mutex>
 
 const char	playerChar	= 'A';
 const char	obstacleChar	= '#';
 const char 	wallChar	= '|';
 const int	wallsWidth	= 49; //only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 20;
+const int	fps		= 30;
 const int	minLines	= 15; //exit if less or equal
 const int	dif_modifier	= 10;
 
@@ -24,7 +23,6 @@ static int difficulty = 1;
 static int current_points;
 static int counter = 0;
 static bool exitFlag = false;
-static std::mutex input_mutex;
 
 void*	multithread_movement (void* arg); 
 int 	movePlayer (const int & key);
@@ -47,7 +45,7 @@ int main (int argc, char* argv[]) {
 	}
 
 	if(!initscr()) {
-		logMessage (fout, "initscr() failure", 'e');
+		logMessage (fout, "initscr() failed", 'e');
 		exit(2);
 	}
 	logMessage (fout, "initscr executed normally", 'n');
@@ -66,19 +64,16 @@ int main (int argc, char* argv[]) {
 
 	while (!exitFlag) {
 		
-		input_mutex.lock();
-			mvaddch(local_player_x, local_player_y, ' ');
-			printWalls(); //adds walls to refresh buffer
-			refresh(); //puts obstacles on screen
+		mvaddch(local_player_x, local_player_y, ' ');
+		printWalls(); //adds walls to refresh buffer
+		refresh(); //puts obstacles on screen
 
-			checkPlayer(local_player_x, local_player_y);
-			if (local_player_x != global_player_x || local_player_y != global_player_y) {	
-				local_player_x = global_player_x;
-				local_player_y = global_player_y;
-			}
-			mvaddch(local_player_x, local_player_y, playerChar);
-		input_mutex.unlock();
-
+		checkPlayer(local_player_x, local_player_y);
+		if (local_player_x != global_player_x || local_player_y != global_player_y) {	
+			local_player_x = global_player_x;
+			local_player_y = global_player_y;
+		}
+		mvaddch(local_player_x, local_player_y, playerChar);
 		refresh(); //put changes on screen
 
 		napms(1000/fps); //make moves fps times per second
@@ -95,17 +90,15 @@ int main (int argc, char* argv[]) {
 void* multithread_movement (void* arg) {
 	int key;
 	while (true) {
-		napms(1000/fps);
 		key = getch();
 		
-		input_mutex.lock();
-			pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-			movePlayer (key);
-			pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-		input_mutex.unlock();
+		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+		movePlayer (key);
+		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 
 		if (tolower(key) =='q') exitFlag = true;
 		flushinp(); // removes any unattended input
+		napms(1000/fps);
 	}
 	return NULL;
 }

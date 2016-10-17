@@ -1,6 +1,6 @@
 - [x] add obstacles on first line + detection
-- [ ] add random obstacles
+- [x] add random obstacles
 - [ ] add points detection
 - [ ] add speedmeter (speed depends on time and points)
-- [ ] add AI
+- [ ] add more intelligence random obstacles
 - [ ] add highscores (depends on points)
