@@ -6,13 +6,14 @@
 #include <string>
 #include <cctype>
 #include <pthread.h>
+#include <mutex>
 
 const char	playerChar	= 'A';
 const char	obstacleChar	= '#';
 const char 	wallChar	= '|';
 const int	wallsWidth	= 19; //only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 10;
+const int	fps		= 20;
 const int	minLines	= 15; //exit if less or equal
 const int	dif_modifier	= 15;
 
@@ -23,6 +24,7 @@ static int difficulty = 1;
 static int current_points;
 static int counter = 0;
 static bool exitFlag = false;
+static std::mutex input_mutex;
 
 void*	multithread_movement (void* arg); 
 int 	movePlayer (const int & key);
@@ -63,17 +65,19 @@ int main (int argc, char* argv[]) {
 	pthread_create(&move_thread, NULL, multithread_movement, NULL);
 
 	while (!exitFlag) {
-		mvaddch(local_player_x, local_player_y, ' ');
+		
+		input_mutex.lock();
+			mvaddch(local_player_x, local_player_y, ' ');
+			printWalls(); //adds walls to refresh buffer
+			refresh(); //puts obstacles on screen
 
-		printWalls(); //adds walls to refresh buffer
-
-		refresh(); //puts obstacles on screen
-		checkPlayer(local_player_x, local_player_y);
-		if (local_player_x != global_player_x || local_player_y != global_player_y) {	
-			local_player_x = global_player_x;
-			local_player_y = global_player_y;
-		}
-		mvaddch(local_player_x, local_player_y, playerChar);
+			checkPlayer(local_player_x, local_player_y);
+			if (local_player_x != global_player_x || local_player_y != global_player_y) {	
+				local_player_x = global_player_x;
+				local_player_y = global_player_y;
+			}
+			mvaddch(local_player_x, local_player_y, playerChar);
+		input_mutex.unlock();
 
 		refresh(); //put changes on screen
 
@@ -93,9 +97,13 @@ void* multithread_movement (void* arg) {
 	while (true) {
 		napms(1000/fps);
 		key = getch();
-		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-		movePlayer (key);
-		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+		
+		input_mutex.lock();
+			pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+			movePlayer (key);
+			pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+		input_mutex.unlock();
+
 		if (tolower(key) =='q') exitFlag = true;
 		flushinp(); // removes any unattended input
 	}
