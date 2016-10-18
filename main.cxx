@@ -12,7 +12,7 @@ const char	obstacleChar	= '#';
 const char 	wallChar	= '|';
 const int	wallsWidth	= 49; // only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 20;
+const int	fps		= 15;
 const int	minLines	= 15; // exit if less or equal
 const int	dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
 
@@ -35,7 +35,7 @@ void	generateNewLine (void);
 int	isWall (const int &x, const int &y);
 void	checkScreen (void);
 
-int main (int argc, char* argv[]) {
+int main () {
 
 ////// initialization routines	
 	srand(time(NULL));
@@ -53,11 +53,7 @@ int main (int argc, char* argv[]) {
 	logMessage (fout, "initscr executed normally", 'n');
 	noecho(); curs_set(0); cbreak();
 	keypad(stdscr, TRUE);
-	checkScreen(); 
-        refresh();
-        clear();
-        refresh();
-        napms(100);
+        checkScreen();
 ////// end of routines
 
 ////// variable initialization
@@ -161,17 +157,18 @@ void printWalls () {
 }
 
 void generateNewLine () {
-	move(0,0); insertln();
-	int obstacle[wallsWidth] = {0};
-	int len = rand()%wallsWidth/2;
+        move(0, 0); insertln();
+        int len = rand()%wallsWidth/4;
         int start = rand()%wallsWidth + leftWall;
 	if (!(counter++ % (dif_modifier/difficulty)))
-		for (int i = 0; (i < len) && (start + i <= COLS/2 + wallsWidth/2); i++)
-			mvaddch(0, start + i, obstacleChar);
+                for (int i = 0; i < len; i++) {
+                        if (start + i < rightWall) mvaddch(0, start + i, obstacleChar);
+                        if (start - i > leftWall) mvaddch(0, start - i, obstacleChar);
+                }
 }
 
 int isWall (const int &x, const int &y) {
-	move(x ,y);
+        move(x, y);
 	if(inch() != ' ') return 1;
 	return 0;
 }
