@@ -3,4 +3,4 @@
 - [x] add points detection (based on obstacle lines counter)
 - [ ] add speedmeter (speed depends on time and points)
 - [x] add more intelligence random obstacles
-- [ ] add highscores (depends on points)
+- [x] add points-meter

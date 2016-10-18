@@ -34,6 +34,7 @@ void	printWalls (void);
 void	generateNewLine (void);
 int	isWall (const int &x, const int &y);
 void	checkScreen (void);
+void    insertCounter (void);
 
 int main () {
 
@@ -79,7 +80,7 @@ int main () {
 			local_player_x = global_player_x;
 			local_player_y = global_player_y;
 		}
-		mvaddch(local_player_x, local_player_y, playerChar);
+                mvaddch(local_player_x, local_player_y, playerChar | A_BOLD);
 		refresh(); //put changes on screen
 
 		napms(1000/fps); //make moves fps times per second
@@ -158,13 +159,22 @@ void printWalls () {
 
 void generateNewLine () {
         move(0, 0); insertln();
-        int len = rand()%wallsWidth/4;
-        int start = rand()%wallsWidth + leftWall;
-	if (!(counter++ % (dif_modifier/difficulty)))
+        insertCounter();
+        if (!(counter++ % (dif_modifier/difficulty))) {
+                int len = rand()%wallsWidth/4;
+                int start = rand()%wallsWidth + leftWall;
                 for (int i = 0; i < len; i++) {
                         if (start + i < rightWall) mvaddch(0, start + i, obstacleChar);
                         if (start - i > leftWall) mvaddch(0, start - i, obstacleChar);
                 }
+        }
+}
+
+void insertCounter () {
+        for (int i = 0; i < leftWall; i++) { mvaddch(1, i, ' '); mvaddch(2, i, ' '); }
+        mvprintw(0, leftWall - 10, "Points:");
+        mvprintw(1, leftWall - 10, "%d", counter);
+        return;
 }
 
 int isWall (const int &x, const int &y) {
@@ -186,7 +196,7 @@ void logMessage (std::ofstream & fout, const std::string & msg, char msgType) {
 }
 
 void checkScreen () {
-	if (COLS < (wallsWidth+5) || LINES < minLines) {
+        if (COLS < (wallsWidth+15) || LINES < minLines) {
 		logMessage (fout, "incorrect screen size", 'e');
 		endwin();
 		exit (4);
