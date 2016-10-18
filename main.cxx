@@ -3,26 +3,28 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
-#include <string>
+#include <cstring> 
 #include <cctype>
 #include <pthread.h>
 
 const char	playerChar	= 'A';
 const char	obstacleChar	= '#';
 const char 	wallChar	= '|';
-const int	wallsWidth	= 49; //only mod2 = 1
+const int	wallsWidth	= 49; // only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 15;
-const int	minLines	= 15; //exit if less or equal
-const int	dif_modifier	= 20;
+const int	fps		= 20;
+const int	minLines	= 15; // exit if less or equal
+const int	dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
 
 static std::ofstream fout;
 static int global_player_x = 10;
 static int global_player_y = 10;
 static int difficulty = 4;
-static int current_points;
 static int counter = 0;
 static bool exitFlag = false;
+
+static int leftWall;
+static int rightWall;
 
 void*	multithread_movement (void* arg); 
 int 	movePlayer (const int & key);
@@ -35,7 +37,7 @@ void	checkScreen (void);
 
 int main (int argc, char* argv[]) {
 
-////// inititalization routines	
+////// initialization routines	
 	srand(time(NULL));
 
 	fout.open("log.txt");
@@ -52,13 +54,21 @@ int main (int argc, char* argv[]) {
 	noecho(); curs_set(0); cbreak();
 	keypad(stdscr, TRUE);
 	checkScreen(); 
+        refresh();
+        clear();
+        refresh();
+        napms(100);
 ////// end of routines
 
+////// variable initialization
+        leftWall = (COLS/2) - wallsWidth/2 - 1;
+        rightWall = (COLS/2) + wallsWidth/2 + 1;
 	global_player_x = 2*LINES/3; 
 	global_player_y = COLS/2;
 	int local_player_x = global_player_x;
 	int local_player_y = global_player_y;
-
+////// end of vars
+	
 	pthread_t move_thread;
 	pthread_create(&move_thread, NULL, multithread_movement, NULL);
 
@@ -108,8 +118,11 @@ void checkPlayer (int & local_x, int & local_y) {
 	if (inch() != ' ') global_player_x++;
 	if (global_player_x >= LINES - 1) { //global
 		logMessage (fout, "player fell out", 'n');
-		//std::string = "counter is " + counter;
-		//logMessage //rewrite to frintf, fout >> or logMessage with strcat() C func
+                fout << "counter is " << counter << std::endl; //temp
+                /*char* temp_for_itoa = (char*)malloc(10);
+		char* out_str = strcat("counter is ", itoa(counter, temp_for_itoa, 10));
+                logMessage (fout, out_str, 'n'); //rewrite to fout >> or logMessage with strcat() C func
+                */
 		exitFlag = true;
 	}
 }
@@ -142,8 +155,8 @@ int movePlayer (const int & key) {
 void printWalls () {
 	generateNewLine();
 	for (int i = 0; i < LINES; i++) {
-		mvaddch(i, (COLS/2) - wallsWidth/2 - 1, wallChar);
-		mvaddch(i, (COLS/2) + wallsWidth/2 + 1, wallChar);
+                mvaddch(i, leftWall, wallChar);
+                mvaddch(i, rightWall, wallChar);
 	}
 }
 
@@ -151,7 +164,7 @@ void generateNewLine () {
 	move(0,0); insertln();
 	int obstacle[wallsWidth] = {0};
 	int len = rand()%wallsWidth/2;
-	int start = rand()%wallsWidth + COLS/2 - wallsWidth/2;
+        int start = rand()%wallsWidth + leftWall;
 	if (!(counter++ % (dif_modifier/difficulty)))
 		for (int i = 0; (i < len) && (start + i <= COLS/2 + wallsWidth/2); i++)
 			mvaddch(0, start + i, obstacleChar);
