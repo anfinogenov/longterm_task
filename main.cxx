@@ -9,7 +9,7 @@
 
 const char	playerChar	= 'A';
 const char	obstacleChar	= '#';
-const char 	wallChar	= '|';
+const char 	wallChar	= 'X';
 const int	wallsWidth	= 49; // only mod2 = 1
 const long int	startTime	= time(NULL);
 const int	fps		= 15;
@@ -47,7 +47,6 @@ int main () {
 		std::cerr << "cannot open log file\n";
 		exit(1);
 	}
-
 	if(!initscr()) {
 		logMessage (fout, "initscr() failed", 'e');
 		exit(2);
@@ -56,6 +55,12 @@ int main () {
 	noecho(); curs_set(0); cbreak();
 	keypad(stdscr, TRUE);
         checkScreen();
+        if(!has_colors()) {
+          endwin();
+          logMessage(fout, "colors isn't allowed", 'e');
+          exit(5);
+        }
+        start_color();
 ////// end of routines
 
 ////// variable initialization
@@ -65,6 +70,8 @@ int main () {
 	global_player_y = COLS/2;
 	int local_player_x = global_player_x;
 	int local_player_y = global_player_y;
+        init_pair(1, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(2, COLOR_RED, COLOR_BLACK);
 ////// end of vars
 	
 	pthread_t move_thread;
@@ -154,9 +161,11 @@ int movePlayer (const int & key) {
 void printWalls () {
 	generateNewLine();
 	for (int i = 0; i < LINES; i++) {
-                mvaddch(i, leftWall, wallChar);
-                mvaddch(i, rightWall, wallChar);
+                mvaddch(i, leftWall, wallChar | COLOR_PAIR(1));
+                mvaddch(i, rightWall, wallChar | COLOR_PAIR(1));
 	}
+        for (int i = 1; i <= wallsWidth; i++)
+                mvaddch(LINES-1,i+leftWall, wallChar | COLOR_PAIR(2) | A_UNDERLINE | A_DIM);
 }
 
 void generateNewLine () {
