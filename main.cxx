@@ -15,6 +15,7 @@ const long int	startTime	= time(NULL);
 const int	fps		= 15;
 const int	minLines	= 15; // exit if less or equal
 const int	dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
+const int	counterFirstLn  = 3;
 
 static std::ofstream fout;
 static int global_player_x = 10;
@@ -87,6 +88,7 @@ int main () {
 		flushinp(); //remove any unattended input
 	}
 	pthread_cancel(move_thread);
+        getch();
 	endwin(); //closes curses screen
 	logMessage (fout, "program exited normally", 'n');
 	fout.close();
@@ -171,9 +173,17 @@ void generateNewLine () {
 }
 
 void insertCounter () {
-        for (int i = 0; i < leftWall; i++) { mvaddch(1, i, ' '); mvaddch(2, i, ' '); }
-        mvprintw(0, leftWall - 10, "Points:");
-        mvprintw(1, leftWall - 10, "%d", counter);
+        int secondLn = counterFirstLn+1;
+        for (int i = 0; i < leftWall; i++) {
+            mvaddch(secondLn, i, ' ');
+            mvaddch(secondLn+1, i, ' ');
+            mvaddch(secondLn+3, i, ' ');
+            mvaddch(secondLn+4, i, ' ');
+        }
+        mvprintw(counterFirstLn, leftWall - 10, "Points:");
+        mvprintw(counterFirstLn+1, leftWall - 10, "%d", counter+1);
+        mvprintw(counterFirstLn+3, leftWall - 10, "Time:");
+        mvprintw(counterFirstLn+4, leftWall - 10, "%d", time(NULL) - startTime);
         return;
 }
 
