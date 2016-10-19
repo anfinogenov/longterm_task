@@ -12,7 +12,7 @@ const char	obstacleChar	= '#';
 const char 	wallChar	= 'X';
 const int	wallsWidth	= 49; // only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 15;
+const int	fps		= 20;
 const int	minLines	= 30; // exit if less or equal
 const int	dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
 const int	counterFirstLn  = 3;
@@ -20,7 +20,7 @@ const int	counterFirstLn  = 3;
 static std::ofstream fout;
 static int global_player_x = 10;
 static int global_player_y = 10;
-static int difficulty = 4;
+static int difficulty = 5;
 static int counter = 0;
 static bool exitFlag = false;
 
@@ -37,6 +37,7 @@ void	generateNewLine (void);
 int	isWall (const int &x, const int &y);
 void	checkScreen (void);
 void    insertCounter (void);
+void    scoreAndExit (void);
 
 int main () {
 
@@ -96,7 +97,7 @@ int main () {
 		flushinp(); //remove any unattended input
 	}
 	pthread_cancel(move_thread);
-        char exitkey; while (tolower(exitkey = getch()) != 'q'); //awaits for 'q' to  exit
+        scoreAndExit();
 	endwin(); //closes curses screen
         logCounter();
 	logMessage (fout, "program exited normally", 'n');
@@ -179,7 +180,7 @@ void insertCounter () {
             mvaddch(secondLn+10, i, ' ');
         }
         mvprintw(counterFirstLn, leftWall - 13, "Points:");
-        mvprintw(counterFirstLn+1, leftWall - 13, "%d", counter+1);
+        mvprintw(counterFirstLn+1, leftWall - 13, "%d", counter*difficulty*difficulty/dif_modifier+1);
         mvprintw(counterFirstLn+3, leftWall - 13, "Time:");
         mvprintw(counterFirstLn+4, leftWall - 13, "%d", time(NULL) - startTime);
         mvprintw(counterFirstLn+6, leftWall - 13, "Difficulty:");
@@ -218,6 +219,13 @@ void checkScreen () {
 
 void logCounter () {
         char count[20] = {0};
-        sprintf(count, "%s %d", "counter is", counter);
+        sprintf(count, "%s %d", "counter is", counter*difficulty*difficulty/dif_modifier);
         logMessage (fout, count, 'n');
+}
+
+void scoreAndExit () {
+        char exitkey;
+        mvprintw (LINES/2, COLS/2 - 17, "   Game over: Your score is %d   ", counter*difficulty*difficulty/dif_modifier);
+        mvprintw (LINES/2 + 1, COLS/2 - 11, "   Press 'q' to exit   ");
+        while (tolower(exitkey = getch()) != 'q'); //awaits for 'q' to  exit
 }
