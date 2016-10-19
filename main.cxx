@@ -22,6 +22,7 @@ static int global_player_x = 10;
 static int global_player_y = 10;
 static int difficulty = 5;
 static int counter = 0;
+static int points = 0;
 static bool exitFlag = false;
 
 static int leftWall;
@@ -37,7 +38,7 @@ void	generateNewLine (void);
 int	isWall (const int &x, const int &y);
 void	checkScreen (void);
 void    insertCounter (void);
-void    scoreAndExit (void);
+int     scoreAndExit (void);
 
 int main () {
 
@@ -81,6 +82,7 @@ int main () {
 
 	while (!exitFlag) {
 		if (!counter % 20) { clear(); refresh(); }
+                points = counter*difficulty*difficulty/dif_modifier;
 		mvaddch(local_player_x, local_player_y, ' ');
 		printWalls(); //adds walls to refresh buffer
 		refresh(); //puts obstacles on screen
@@ -97,7 +99,7 @@ int main () {
 		flushinp(); //remove any unattended input
 	}
 	pthread_cancel(move_thread);
-        scoreAndExit();
+        if(scoreAndExit()) { endwin(); system ("./dd3o.exe"); }
 	endwin(); //closes curses screen
         logCounter();
 	logMessage (fout, "program exited normally", 'n');
@@ -180,7 +182,7 @@ void insertCounter () {
             mvaddch(secondLn+10, i, ' ');
         }
         mvprintw(counterFirstLn, leftWall - 13, "Points:");
-        mvprintw(counterFirstLn+1, leftWall - 13, "%d", counter*difficulty*difficulty/dif_modifier+1);
+        mvprintw(counterFirstLn+1, leftWall - 13, "%d", points);
         mvprintw(counterFirstLn+3, leftWall - 13, "Time:");
         mvprintw(counterFirstLn+4, leftWall - 13, "%d", time(NULL) - startTime);
         mvprintw(counterFirstLn+6, leftWall - 13, "Difficulty:");
@@ -219,13 +221,15 @@ void checkScreen () {
 
 void logCounter () {
         char count[20] = {0};
-        sprintf(count, "%s %d", "counter is", counter*difficulty*difficulty/dif_modifier);
+        sprintf(count, "%s %d", "counter is", counter);
         logMessage (fout, count, 'n');
 }
 
-void scoreAndExit () {
+int scoreAndExit() {
         char exitkey;
-        mvprintw (LINES/2, COLS/2 - 17, "   Game over: Your score is %d   ", counter*difficulty*difficulty/dif_modifier);
-        mvprintw (LINES/2 + 1, COLS/2 - 11, "   Press 'q' to exit   ");
-        while (tolower(exitkey = getch()) != 'q'); //awaits for 'q' to  exit
+        mvprintw (LINES/2 - 1, COLS/2 - 17, "   Game over: Your score is %d   ", points);
+        mvprintw (LINES/2    , COLS/2 - 11, "   Press 'q' to exit   ");
+        mvprintw (LINES/2 + 1, COLS/2 - 15, "   or press 'r' to restart   ");
+        while (tolower(exitkey = getch()) != 'q') if(exitkey == 'r') return 1; //awaits for 'q' to  exit
+        return 0;
 }
