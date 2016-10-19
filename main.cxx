@@ -13,7 +13,7 @@ const char 	wallChar	= 'X';
 const int	wallsWidth	= 49; // only mod2 = 1
 const long int	startTime	= time(NULL);
 const int	fps		= 15;
-const int	minLines	= 15; // exit if less or equal
+const int	minLines	= 30; // exit if less or equal
 const int	dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
 const int	counterFirstLn  = 3;
 
@@ -32,7 +32,7 @@ int 	movePlayer (const int & key);
 void	checkPlayer (int & local_x, int & local_y);
 void	logMessage (std::ofstream & fout, const std::string & msg, char msgType);
 void	printWalls (void);
-void    printCounter (void);
+void    logCounter (void);
 void	generateNewLine (void);
 int	isWall (const int &x, const int &y);
 void	checkScreen (void);
@@ -67,7 +67,7 @@ int main () {
 ////// variable initialization
         leftWall = (COLS/2) - wallsWidth/2 - 1;
         rightWall = (COLS/2) + wallsWidth/2 + 1;
-	global_player_x = 2*LINES/3; 
+        global_player_x = LINES - 16;
 	global_player_y = COLS/2;
 	int local_player_x = global_player_x;
 	int local_player_y = global_player_y;
@@ -96,9 +96,9 @@ int main () {
 		flushinp(); //remove any unattended input
 	}
 	pthread_cancel(move_thread);
-        getch();
+        char exitkey; while (tolower(exitkey = getch()) != 'q'); //awaits for 'q' to  exit
 	endwin(); //closes curses screen
-        printCounter();
+        logCounter();
 	logMessage (fout, "program exited normally", 'n');
 	fout.close();
 
@@ -216,7 +216,7 @@ void checkScreen () {
 	logMessage (fout, "screen size is correct", 'n');
 }
 
-void printCounter () {
+void logCounter () {
         char count[20] = {0};
         sprintf(count, "%s %d", "counter is", counter);
         logMessage (fout, count, 'n');
