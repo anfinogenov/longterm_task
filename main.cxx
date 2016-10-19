@@ -41,6 +41,15 @@ void	checkScreen (void);
 void    insertCounter (void);
 int     scoreAndExit (void);
 
+namespace bonus {
+    void slowdown (void);
+    void shoot (void);
+    void moveThrough (void);
+    void hpUp (void);
+    void hpDown (void);
+    void teleport (void);
+}
+
 int main () {
 
 ////// initialization routines	
