@@ -3,7 +3,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
-#include <cstring> 
+#include <string>
 #include <cctype>
 #include <pthread.h>
 
@@ -32,6 +32,7 @@ int 	movePlayer (const int & key);
 void	checkPlayer (int & local_x, int & local_y);
 void	logMessage (std::ofstream & fout, const std::string & msg, char msgType);
 void	printWalls (void);
+void    printCounter (void);
 void	generateNewLine (void);
 int	isWall (const int &x, const int &y);
 void	checkScreen (void);
@@ -78,7 +79,7 @@ int main () {
 	pthread_create(&move_thread, NULL, multithread_movement, NULL);
 
 	while (!exitFlag) {
-		
+		if (!counter % 20) { clear(); refresh(); }
 		mvaddch(local_player_x, local_player_y, ' ');
 		printWalls(); //adds walls to refresh buffer
 		refresh(); //puts obstacles on screen
@@ -97,6 +98,7 @@ int main () {
 	pthread_cancel(move_thread);
         getch();
 	endwin(); //closes curses screen
+        printCounter();
 	logMessage (fout, "program exited normally", 'n');
 	fout.close();
 
@@ -105,11 +107,9 @@ int main () {
 
 void* multithread_movement (void* arg) {
 	int key;
-	while (true) {
-		key = getch();
-		
+        while (key = getch()) {
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-		movePlayer (key);
+                movePlayer (key);
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 
 		if (tolower(key) =='q') exitFlag = true;
@@ -122,30 +122,15 @@ void* multithread_movement (void* arg) {
 void checkPlayer (int & local_x, int & local_y) {
 	move (local_x, local_y);	
 	if (inch() != ' ') global_player_x++;
-	if (global_player_x >= LINES - 1) { //global
-		logMessage (fout, "player fell out", 'n');
-                fout << "counter is " << counter << std::endl; //temp
-                /*char* temp_for_itoa = (char*)malloc(10);
-		char* out_str = strcat("counter is ", itoa(counter, temp_for_itoa, 10));
-                logMessage (fout, out_str, 'n'); //rewrite to fout >> or logMessage with strcat() C func
-                */
+        if (global_player_x >= LINES - 1) { //global
+                logMessage (fout, "player fell out", 'n');
 		exitFlag = true;
 	}
 }
 
 int movePlayer (const int & key) {
 	int new_coord; //temp variable to store coordinate where player wants to move in
-	switch (key) {
-		/* commented until wall-deletion bug isn't solved
-		case KEY_DOWN:
-			new_coord = global_player_x + 1;
-			if (!isWall(new_coord, global_player_y)) global_player_x = new_coord;
-			break;
-		case KEY_UP:
-			new_coord = global_player_x - 1;
-			if (!isWall(new_coord, global_player_y)) global_player_x = new_coord;
-			break;
-		*/
+        switch (key) {
 		case KEY_RIGHT:
 			new_coord = global_player_y + 1;
 			if (!isWall(global_player_x, new_coord)) global_player_y = new_coord;
@@ -165,7 +150,7 @@ void printWalls () {
                 mvaddch(i, rightWall, wallChar | COLOR_PAIR(1));
 	}
         for (int i = 1; i <= wallsWidth; i++)
-                mvaddch(LINES-1,i+leftWall, wallChar | COLOR_PAIR(2) | A_UNDERLINE | A_DIM);
+                mvaddch(LINES-1,i+leftWall, wallChar | COLOR_PAIR(2) | A_DIM);
 }
 
 void generateNewLine () {
@@ -188,11 +173,19 @@ void insertCounter () {
             mvaddch(secondLn+1, i, ' ');
             mvaddch(secondLn+3, i, ' ');
             mvaddch(secondLn+4, i, ' ');
+            mvaddch(secondLn+6, i, ' ');
+            mvaddch(secondLn+7, i, ' ');
+            mvaddch(secondLn+9, i, ' ');
+            mvaddch(secondLn+10, i, ' ');
         }
-        mvprintw(counterFirstLn, leftWall - 10, "Points:");
-        mvprintw(counterFirstLn+1, leftWall - 10, "%d", counter+1);
-        mvprintw(counterFirstLn+3, leftWall - 10, "Time:");
-        mvprintw(counterFirstLn+4, leftWall - 10, "%d", time(NULL) - startTime);
+        mvprintw(counterFirstLn, leftWall - 13, "Points:");
+        mvprintw(counterFirstLn+1, leftWall - 13, "%d", counter+1);
+        mvprintw(counterFirstLn+3, leftWall - 13, "Time:");
+        mvprintw(counterFirstLn+4, leftWall - 13, "%d", time(NULL) - startTime);
+        mvprintw(counterFirstLn+6, leftWall - 13, "Difficulty:");
+        mvprintw(counterFirstLn+7, leftWall - 13, "%d", difficulty);
+        mvprintw(counterFirstLn+9, leftWall - 13, "Lives:");
+        mvprintw(counterFirstLn+10, leftWall - 13, "%d", LINES - global_player_x - 1);
         return;
 }
 
@@ -221,4 +214,10 @@ void checkScreen () {
 		exit (4);
 	}
 	logMessage (fout, "screen size is correct", 'n');
+}
+
+void printCounter () {
+        char count[20] = {0};
+        sprintf(count, "%s %d", "counter is", counter);
+        logMessage (fout, count, 'n');
 }
