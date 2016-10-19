@@ -6,6 +6,7 @@
 #include <string>
 #include <cctype>
 #include <pthread.h>
+#include <unistd.h>
 
 const char	playerChar	= 'A';
 const char	obstacleChar	= '#';
@@ -99,11 +100,17 @@ int main () {
 		flushinp(); //remove any unattended input
 	}
 	pthread_cancel(move_thread);
-        if(scoreAndExit()) { endwin(); system ("./dd3o.exe"); }
+        if(scoreAndExit()) {
+            endwin();
+            logCounter();
+            fout.close();
+            system("./dd3o.exe");
+        }
 	endwin(); //closes curses screen
         logCounter();
 	logMessage (fout, "program exited normally", 'n');
 	fout.close();
+        printf("\x1b[0m");
 
 	return 0;
 }
