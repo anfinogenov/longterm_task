@@ -17,11 +17,11 @@ const int	minLines	= 30; // exit if less or equal
 const int	dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
 const int	counterFirstLn  = 3;
 
-static int fps = 20;
+static int fps = 15;
 static std::ofstream fout;
 static int global_player_x = 10;
 static int global_player_y = 10;
-static int difficulty = 5;
+static int difficulty = 4;
 static int counter = 0;
 static int points = 0;
 static bool exitFlag = false;
@@ -42,15 +42,32 @@ void    insertCounter (void);
 int     scoreAndExit (void);
 
 namespace bonus {
+    const int rate = 11;
+
+    const char slowdownChar = 'S';
     const int slowFPS = 5;
     const int slowTimeSeconds = 10; //time of slowing down in seconds
     const int slowTimeLines = 30; //time of slowing down in generated lines
     void slowdown (void);
+
+    const char shootChar = 'F';
     void shoot (void);
+
+    const char moveThroughChar = 'M';
     void moveThrough (void);
+
+    const char hpUpChar = 'U';
+    const int hpUpBonus = 5;
     void hpUp (void);
+
+    const char hpDownChar = 'D';
+    const int hpDownBonus = 5;
     void hpDown (void);
+
+    const char teleportChar = 'T';
     void teleport (void);
+
+    void generateBonus (void);
 }
 
 int main () {
@@ -88,6 +105,9 @@ int main () {
 	int local_player_y = global_player_y;
         init_pair(1, COLOR_YELLOW, COLOR_BLACK);
         init_pair(2, COLOR_RED, COLOR_BLACK);
+        init_pair(3, COLOR_BLUE, COLOR_BLACK);
+        init_pair(4, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(5, COLOR_GREEN, COLOR_BLACK);
 ////// end of vars
 	
 	pthread_t move_thread;
@@ -142,8 +162,25 @@ void* multithread_movement (void* arg) {
 }
 
 void checkPlayer (int & local_x, int & local_y) {
-	move (local_x, local_y);	
-	if (inch() != ' ') global_player_x++;
+        move (local_x, local_y);
+        char checkedPoint = inch();
+        if (checkedPoint != ' ')
+                switch (checkedPoint) {
+                case bonus::hpUpChar:
+                        addch(' ');
+                        bonus::hpUp();
+                        break;
+                case bonus::hpDownChar:
+                        addch(' ');
+                        bonus::hpDown();
+                        break;
+                case obstacleChar:
+                        global_player_x++;
+                        break;
+                default:
+                        break;
+                }
+
         if (global_player_x >= LINES - 1) { //global
                 logMessage (fout, "player fell out", 'n');
 		exitFlag = true;
@@ -186,6 +223,7 @@ void generateNewLine () {
                         if (start - i > leftWall) mvaddch(0, start - i, obstacleChar);
                 }
         }
+        else if (!(counter % bonus::rate)) bonus::generateBonus();
 }
 
 void insertCounter () {
@@ -213,8 +251,9 @@ void insertCounter () {
 
 int isWall (const int &x, const int &y) {
         move(x, y);
-	if(inch() != ' ') return 1;
-	return 0;
+        char checkedPoint = inch();
+        if(checkedPoint == wallChar || checkedPoint == obstacleChar) return 1;
+        return 0;
 }
 
 void logMessage (std::ofstream & fout, const std::string & msg, char msgType) {
@@ -261,4 +300,41 @@ void bonus::slowdown () {
     while (true)
         if ((time(NULL) - timeStart) > slowTimeSeconds || (counter - counterStart) > slowTimeLines)
             return;
+}
+
+void bonus::shoot () {
+    for (int i = global_player_x-1; i > 0; i--) mvaddch (i, global_player_y, ' ');
+}
+
+void bonus::moveThrough () {
+}
+
+void bonus::hpUp () {
+    global_player_x -= hpUpBonus;
+}
+
+void bonus::hpDown () {
+    global_player_x += hpDownBonus;
+}
+
+void bonus::generateBonus () {
+    switch (rand()%5) {
+    case 0:
+        mvaddch(0, leftWall + rand()%wallsWidth, bonus::slowdownChar | COLOR_PAIR(3));
+        break;
+    case 1:
+        mvaddch(0, leftWall + rand()%wallsWidth, bonus::shootChar | COLOR_PAIR(4));
+        break;
+    case 2:
+        mvaddch(0, leftWall + rand()%wallsWidth, bonus::moveThroughChar | COLOR_PAIR(1));
+        break;
+    case 3:
+        mvaddch(0, leftWall + rand()%wallsWidth, bonus::hpUpChar | COLOR_PAIR(5));
+        break;
+    case 4:
+        mvaddch(0, leftWall + rand()%wallsWidth, bonus::hpDownChar | COLOR_PAIR(2));
+        break;
+    default:
+        break;
+    }
 }
