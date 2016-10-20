@@ -13,11 +13,11 @@ const char	obstacleChar	= '#';
 const char 	wallChar	= 'X';
 const int	wallsWidth	= 49; // only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	fps		= 20;
 const int	minLines	= 30; // exit if less or equal
 const int	dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
 const int	counterFirstLn  = 3;
 
+static int fps = 20;
 static std::ofstream fout;
 static int global_player_x = 10;
 static int global_player_y = 10;
@@ -42,6 +42,9 @@ void    insertCounter (void);
 int     scoreAndExit (void);
 
 namespace bonus {
+    const int slowFPS = 5;
+    const int slowTimeSeconds = 10; //time of slowing down in seconds
+    const int slowTimeLines = 30; //time of slowing down in generated lines
     void slowdown (void);
     void shoot (void);
     void moveThrough (void);
@@ -246,6 +249,16 @@ int scoreAndExit() {
         mvprintw (LINES/2 - 1, COLS/2 - 17, "   Game over: Your score is %d   ", points);
         mvprintw (LINES/2    , COLS/2 - 11, "   Press 'q' to exit   ");
         mvprintw (LINES/2 + 1, COLS/2 - 15, "   or press 'r' to restart   ");
-        while (tolower(exitkey = getch()) != 'q') if(exitkey == 'r') return 1; //awaits for 'q' to  exit
+        while (tolower(exitkey = getch()) != 'q') if (exitkey == 'r') return 1; //awaits for 'q' to  exit
         return 0;
+}
+
+void bonus::slowdown () {
+    const int oldFps = fps;
+    fps = slowFPS;
+    const int counterStart = counter;
+    long int timeStart = time(NULL);
+    while (true)
+        if ((time(NULL) - timeStart) > slowTimeSeconds || (counter - counterStart) > slowTimeLines)
+            return;
 }
