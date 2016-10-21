@@ -14,7 +14,7 @@ const char	obstacleChar	= '#';
 const char 	wallChar	= 'X';
 const int	wallsWidth	= 49; // only mod2 = 1
 const long int	startTime	= time(NULL);
-const int	minLines	= 30; // exit if less or equal
+const int	minLines	= 35; // exit if less or equal
 const int	dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
 const int	counterFirstLn  = 3;
 
@@ -42,6 +42,7 @@ int	isWall (const int &x, const int &y);
 void	checkScreen (void);
 void    insertCounter (void);
 int     scoreAndExit (void);
+void    checkPause (void);
 
 namespace bonus {
     static int rate = 13;
@@ -119,8 +120,8 @@ int main () {
         clear(); refresh();
 
         while (!exitFlag) {
+                checkPause();
                 if (!pauseFlag) {
-                        mvprintw (COLS/2, leftWall - 13, "              ");
                         if (!(counter % 300)) { difficulty++; bonus::rate += bonus::rateModifier; }
                         points += (float)(difficulty*difficulty)/dif_modifier;
                         mvaddch(local_player_x, local_player_y, ' ');
@@ -133,7 +134,6 @@ int main () {
                         }
                         mvaddch(local_player_x, local_player_y, playerChar | A_BOLD);
                 }
-                else { mvprintw (COLS/2, leftWall - 13, "*** Paused ***"); }
                 refresh(); //put changes on screen
 		napms(1000/fps); //make moves fps times per second
 		flushinp(); //remove any unattended input
@@ -258,6 +258,7 @@ void insertCounter () {
         mvprintw(counterFirstLn+7, leftWall - 13, "%d", difficulty);
         mvprintw(counterFirstLn+9, leftWall - 13, "Lives:");
         mvprintw(counterFirstLn+10, leftWall - 13, "%d", LINES - global_player_x - 1);
+
         return;
 }
 
@@ -281,7 +282,7 @@ void logMessage (std::ofstream & fout, const std::string & msg, char msgType) {
 }
 
 void checkScreen () {
-        if (COLS < (wallsWidth+15) || LINES < minLines) {
+        if (COLS < (wallsWidth+30) || LINES < minLines) {
 		logMessage (fout, "incorrect screen size", 'e');
 		endwin();
 		exit (4);
@@ -342,13 +343,13 @@ void bonus::hpDown () {
 void bonus::generateBonus () {
     switch (rand()%5) {
     case 0:
-        mvaddch(0, leftWall + rand()%wallsWidth, bonus::slowdownChar | COLOR_PAIR(3));
+        //mvaddch(0, leftWall + rand()%wallsWidth, bonus::slowdownChar | COLOR_PAIR(3));
         break;
     case 1:
         mvaddch(0, leftWall + rand()%wallsWidth, bonus::shootChar | COLOR_PAIR(4));
         break;
     case 2:
-        mvaddch(0, leftWall + rand()%wallsWidth, bonus::moveThroughChar | COLOR_PAIR(1));
+        //mvaddch(0, leftWall + rand()%wallsWidth, bonus::moveThroughChar | COLOR_PAIR(1));
         break;
     case 3:
         mvaddch(0, leftWall + rand()%wallsWidth, bonus::hpUpChar | COLOR_PAIR(5));
@@ -359,4 +360,18 @@ void bonus::generateBonus () {
     default:
         break;
     }
+}
+
+void checkPause () {
+    if (!pauseFlag)
+        for (int i = 0; i < leftWall; i++) {
+            mvprintw (LINES/2-1, leftWall - 13, "Space   ");
+            mvprintw (LINES/2,   leftWall - 13, "to pause");
+            mvprintw (LINES/2+1, leftWall - 13, "        ");
+        }
+    else {
+        mvprintw (LINES/2,   leftWall - 13, "Paused      ");
+        mvprintw (LINES/2+1, leftWall - 13, "            ");
+    }
+    refresh();
 }
