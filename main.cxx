@@ -26,6 +26,7 @@ static int difficulty = 0;
 static int counter = 0;
 static float points = 0;
 static bool exitFlag = false;
+static bool pauseFlag = false;
 
 static int leftWall;
 static int rightWall;
@@ -44,7 +45,7 @@ int     scoreAndExit (void);
 
 namespace bonus {
     static int rate = 13;
-    const int rateModifier = 5;
+    const int rateModifier = 1;
 
     const char slowdownChar = 'S';
     const int slowFPS = 5;
@@ -118,20 +119,22 @@ int main () {
         clear(); refresh();
 
         while (!exitFlag) {
-                if (!(counter % 300)) { difficulty++; bonus::rate += bonus::rateModifier; }
-                points += (float)(difficulty*difficulty)/dif_modifier;
-		mvaddch(local_player_x, local_player_y, ' ');
-		printWalls(); //adds walls to refresh buffer
-		refresh(); //puts obstacles on screen
-
-		checkPlayer(local_player_x, local_player_y);
-		if (local_player_x != global_player_x || local_player_y != global_player_y) {	
-			local_player_x = global_player_x;
-			local_player_y = global_player_y;
-		}
-                mvaddch(local_player_x, local_player_y, playerChar | A_BOLD);
-		refresh(); //put changes on screen
-
+                if (!pauseFlag) {
+                        mvprintw (COLS/2, leftWall - 13, "              ");
+                        if (!(counter % 300)) { difficulty++; bonus::rate += bonus::rateModifier; }
+                        points += (float)(difficulty*difficulty)/dif_modifier;
+                        mvaddch(local_player_x, local_player_y, ' ');
+                        printWalls(); //adds walls to refresh buffer
+                        refresh(); //puts obstacles on screen
+                        checkPlayer(local_player_x, local_player_y);
+                        if (local_player_x != global_player_x || local_player_y != global_player_y) {
+                                local_player_x = global_player_x;
+                                local_player_y = global_player_y;
+                        }
+                        mvaddch(local_player_x, local_player_y, playerChar | A_BOLD);
+                }
+                else { mvprintw (COLS/2, leftWall - 13, "*** Paused ***"); }
+                refresh(); //put changes on screen
 		napms(1000/fps); //make moves fps times per second
 		flushinp(); //remove any unattended input
 	}
@@ -155,10 +158,11 @@ void* multithread_movement (void* arg) {
 	int key;
         while (key = getch()) {
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-                movePlayer (key);
+                if (!pauseFlag) movePlayer (key);
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 
 		if (tolower(key) =='q') exitFlag = true;
+                if (tolower(key) == ' ') pauseFlag = !pauseFlag;
 		flushinp(); // removes any unattended input
 		napms(1000/fps);
 	}
