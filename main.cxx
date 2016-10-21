@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
+#include <cmath>
 #include <string>
 #include <cctype>
 #include <pthread.h>
@@ -21,9 +22,9 @@ static int fps = 15;
 static std::ofstream fout;
 static int global_player_x = 10;
 static int global_player_y = 10;
-static int difficulty = 4;
+static int difficulty = 0;
 static int counter = 0;
-static int points = 0;
+static float points = 0;
 static bool exitFlag = false;
 
 static int leftWall;
@@ -42,7 +43,8 @@ void    insertCounter (void);
 int     scoreAndExit (void);
 
 namespace bonus {
-    const int rate = 11;
+    static int rate = 13;
+    const int rateModifier = 5;
 
     const char slowdownChar = 'S';
     const int slowFPS = 5;
@@ -113,9 +115,11 @@ int main () {
 	pthread_t move_thread;
 	pthread_create(&move_thread, NULL, multithread_movement, NULL);
 
-	while (!exitFlag) {
-		if (!counter % 20) { clear(); refresh(); }
-                points = counter*difficulty*difficulty/dif_modifier;
+        clear(); refresh();
+
+        while (!exitFlag) {
+                if (!(counter % 300)) { difficulty++; bonus::rate += bonus::rateModifier; }
+                points += (float)(difficulty*difficulty)/dif_modifier;
 		mvaddch(local_player_x, local_player_y, ' ');
 		printWalls(); //adds walls to refresh buffer
 		refresh(); //puts obstacles on screen
@@ -173,6 +177,10 @@ void checkPlayer (int & local_x, int & local_y) {
                 case bonus::hpDownChar:
                         addch(' ');
                         bonus::hpDown();
+                        break;
+                case bonus::shootChar:
+                        addch(' ');
+                        bonus::shoot();
                         break;
                 case obstacleChar:
                         global_player_x++;
@@ -239,7 +247,7 @@ void insertCounter () {
             mvaddch(secondLn+10, i, ' ');
         }
         mvprintw(counterFirstLn, leftWall - 13, "Points:");
-        mvprintw(counterFirstLn+1, leftWall - 13, "%d", points);
+        mvprintw(counterFirstLn+1, leftWall - 13, "%d", (int)points);
         mvprintw(counterFirstLn+3, leftWall - 13, "Time:");
         mvprintw(counterFirstLn+4, leftWall - 13, "%d", time(NULL) - startTime);
         mvprintw(counterFirstLn+6, leftWall - 13, "Difficulty:");
@@ -279,13 +287,13 @@ void checkScreen () {
 
 void logCounter () {
         char count[20] = {0};
-        sprintf(count, "%s %d", "counter is", counter);
+        sprintf(count, "counter is %d", counter);
         logMessage (fout, count, 'n');
 }
 
 int scoreAndExit() {
         char exitkey;
-        mvprintw (LINES/2 - 1, COLS/2 - 17, "   Game over: Your score is %d   ", points);
+        mvprintw (LINES/2 - 1, COLS/2 - 17, "   Game over: Your score is %d   ", (int)points);
         mvprintw (LINES/2    , COLS/2 - 11, "   Press 'q' to exit   ");
         mvprintw (LINES/2 + 1, COLS/2 - 15, "   or press 'r' to restart   ");
         while (tolower(exitkey = getch()) != 'q') if (exitkey == 'r') return 1; //awaits for 'q' to  exit
@@ -303,7 +311,17 @@ void bonus::slowdown () {
 }
 
 void bonus::shoot () {
-    for (int i = global_player_x-1; i > 0; i--) mvaddch (i, global_player_y, ' ');
+    for (int i = global_player_x-1; i > 0; i--) {
+        move (i, global_player_y);
+        if(inch() == obstacleChar)
+            addch (' ');
+        move (i, global_player_y-1);
+        if(inch() == obstacleChar)
+            addch (' ');
+        move (i, global_player_y+1);
+        if(inch() == obstacleChar)
+            addch (' ');
+    }
 }
 
 void bonus::moveThrough () {
