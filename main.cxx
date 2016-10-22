@@ -89,12 +89,15 @@ int main () {
 		exit(2);
 	}
 	logMessage (fout, "initscr executed normally", 'n');
-	noecho(); curs_set(0); cbreak();
+        noecho();
+        curs_set(0);
+        cbreak();
+        raw();
 	keypad(stdscr, TRUE);
         checkScreen();
         if(!has_colors()) {
           endwin();
-          logMessage(fout, "colors isn't allowed", 'e');
+          logMessage(fout, "colors isn't allowed in this terminal", 'e');
           exit(5);
         }
         start_color();
