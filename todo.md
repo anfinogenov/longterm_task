@@ -1,6 +1,3 @@
-- [x] add obstacles on first line + detection
-- [x] add random obstacles
-- [x] add points detection (based on obstacle lines counter)
-- [ ] add speedmeter (speed depends on time and points)
-- [x] add more intelligence random obstacles
-- [x] add points-meter
+- [ ] rewrite to C
+- [ ] refactor
+deadline: thursday evening (27.10)
