@@ -9,14 +9,14 @@
 #include <pthread.h>
 #include <unistd.h>
 
-const char	playerChar	= 'A';
-const char	obstacleChar	= '#';
-const char 	wallChar	= 'X';
-const int	wallsWidth	= 49; // only mod2 = 1
-const long int	startTime	= time(NULL);
-const int	minLines	= 35; // exit if less or equal
-const int	dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
-const int	counterFirstLn  = 3;
+const char playerChar	= 'A';
+const char obstacleChar	= '#';
+const char wallChar	= 'X';
+const int  wallsWidth	= 49; // only mod2 = 1
+const long startTime	= time(NULL);
+const int  minLines	= 35; // exit if less or equal
+const int  dif_modifier	= 20; // 1 obstacle in (dif_modifier/difficulty) lines
+const int  counterFirstLn  = 3;
 
 static int fps = 15;
 static std::ofstream fout;
@@ -34,7 +34,7 @@ static int rightWall;
 void*	multithread_movement (void* arg); 
 int 	movePlayer (const int & key);
 void	checkPlayer (int & local_x, int & local_y);
-void	logMessage (std::ofstream & fout, const std::string & msg, char msgType);
+void	logMessage (const std::string & msg, char msgType);
 void	printWalls (void);
 void    logCounter (void);
 void	generateNewLine (void);
@@ -48,17 +48,8 @@ namespace bonus {
     static int rate = 13;
     const int rateModifier = 1;
 
-    const char slowdownChar = 'S';
-    const int slowFPS = 5;
-    const int slowTimeSeconds = 10; //time of slowing down in seconds
-    const int slowTimeLines = 30; //time of slowing down in generated lines
-    void slowdown (void);
-
     const char shootChar = 'F';
     void shoot (void);
-
-    const char moveThroughChar = 'M';
-    void moveThrough (void);
 
     const char hpUpChar = 'U';
     const int hpUpBonus = 5;
@@ -68,9 +59,6 @@ namespace bonus {
     const int hpDownBonus = 5;
     void hpDown (void);
 
-    const char teleportChar = 'T';
-    void teleport (void);
-
     void generateBonus (void);
 }
 
@@ -78,27 +66,27 @@ int main () {
 
 ////// initialization routines	
 	srand(time(NULL));
-
-	fout.open("log.txt");
+        char* logFileName = (char*)malloc(50);
+        sprintf(logFileName, "logs/log-%lu.txt", time(NULL));
+        fout.open(logFileName);
 	if(!fout.is_open()) {
 		std::cerr << "cannot open log file\n";
 		exit(1);
 	}
 	if(!initscr()) {
-		logMessage (fout, "initscr() failed", 'e');
+                logMessage ("initscr() failed", 'e');
 		exit(2);
 	}
-	logMessage (fout, "initscr executed normally", 'n');
+        logMessage ("initscr executed normally", 'n');
         noecho();
         curs_set(0);
-        cbreak();
         raw();
 	keypad(stdscr, TRUE);
         checkScreen();
         if(!has_colors()) {
-          endwin();
-          logMessage(fout, "colors isn't allowed in this terminal", 'e');
-          exit(5);
+                endwin();
+                logMessage ("colors isn't allowed in this terminal", 'e');
+                exit(5);
         }
         start_color();
 ////// end of routines
@@ -112,9 +100,8 @@ int main () {
 	int local_player_y = global_player_y;
         init_pair(1, COLOR_YELLOW, COLOR_BLACK);
         init_pair(2, COLOR_RED, COLOR_BLACK);
-        init_pair(3, COLOR_BLUE, COLOR_BLACK);
-        init_pair(4, COLOR_MAGENTA, COLOR_BLACK);
-        init_pair(5, COLOR_GREEN, COLOR_BLACK);
+        init_pair(3, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(4, COLOR_GREEN, COLOR_BLACK);
 ////// end of vars
 	
 	pthread_t move_thread;
@@ -150,7 +137,7 @@ int main () {
         }
 	endwin(); //closes curses screen
         logCounter();
-	logMessage (fout, "program exited normally", 'n');
+        logMessage ("program exited normally", 'n');
 	fout.close();
         printf("\x1b[0m");
 
@@ -197,7 +184,7 @@ void checkPlayer (int & local_x, int & local_y) {
                 }
 
         if (global_player_x >= LINES - 1) { //global
-                logMessage (fout, "player fell out", 'n');
+                logMessage ("player fell out", 'n');
 		exitFlag = true;
 	}
 }
@@ -272,7 +259,7 @@ int isWall (const int &x, const int &y) {
         return 0;
 }
 
-void logMessage (std::ofstream & fout, const std::string & msg, char msgType) {
+void logMessage (const std::string & msg, char msgType) {
 	std::string type;
 	switch (msgType) { //converting char msgType to string
 		case 'n': type = "okay"; break;
@@ -286,17 +273,20 @@ void logMessage (std::ofstream & fout, const std::string & msg, char msgType) {
 
 void checkScreen () {
         if (COLS < (wallsWidth+30) || LINES < minLines) {
-		logMessage (fout, "incorrect screen size", 'e');
+                logMessage ("incorrect screen size", 'e');
 		endwin();
 		exit (4);
 	}
-	logMessage (fout, "screen size is correct", 'n');
+        logMessage ("screen size is correct", 'n');
 }
 
 void logCounter () {
-        char count[20] = {0};
-        sprintf(count, "counter is %d", counter);
-        logMessage (fout, count, 'n');
+        char temp[25] = {0};
+        sprintf(temp, "counter is %d", counter);
+        logMessage (temp, 'n');
+        sprintf(temp, "points is %d", (int)points);
+        logMessage (temp, 'n');
+
 }
 
 int scoreAndExit() {
@@ -306,16 +296,6 @@ int scoreAndExit() {
         mvprintw (LINES/2 + 1, COLS/2 - 15, "   or press 'r' to restart   ");
         while (tolower(exitkey = getch()) != 'q') if (exitkey == 'r') return 1; //awaits for 'q' to  exit
         return 0;
-}
-
-void bonus::slowdown () {
-    const int oldFps = fps;
-    fps = slowFPS;
-    const int counterStart = counter;
-    long int timeStart = time(NULL);
-    while (true)
-        if ((time(NULL) - timeStart) > slowTimeSeconds || (counter - counterStart) > slowTimeLines)
-            return;
 }
 
 void bonus::shoot () {
@@ -332,9 +312,6 @@ void bonus::shoot () {
     }
 }
 
-void bonus::moveThrough () {
-}
-
 void bonus::hpUp () {
     global_player_x -= hpUpBonus;
 }
@@ -344,21 +321,16 @@ void bonus::hpDown () {
 }
 
 void bonus::generateBonus () {
-    switch (rand()%5) {
+    int bonus_x = leftWall + rand()%wallsWidth;
+    switch (rand()%3) {
     case 0:
-        //mvaddch(0, leftWall + rand()%wallsWidth, bonus::slowdownChar | COLOR_PAIR(3));
+        mvaddch(0, bonus_x, bonus::shootChar | COLOR_PAIR(3));
         break;
     case 1:
-        mvaddch(0, leftWall + rand()%wallsWidth, bonus::shootChar | COLOR_PAIR(4));
+        mvaddch(0, bonus_x, bonus::hpUpChar | COLOR_PAIR(4));
         break;
     case 2:
-        //mvaddch(0, leftWall + rand()%wallsWidth, bonus::moveThroughChar | COLOR_PAIR(1));
-        break;
-    case 3:
-        mvaddch(0, leftWall + rand()%wallsWidth, bonus::hpUpChar | COLOR_PAIR(5));
-        break;
-    case 4:
-        mvaddch(0, leftWall + rand()%wallsWidth, bonus::hpDownChar | COLOR_PAIR(2));
+        mvaddch(0, bonus_x, bonus::hpDownChar | COLOR_PAIR(2));
         break;
     default:
         break;
