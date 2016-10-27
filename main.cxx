@@ -50,7 +50,7 @@ namespace bonus {
     static int rate = 13;
     const int rateModifier = 1;
 
-    const char shootChar = 'F';
+    const char shootChar = 'S';
     void shoot (void);
 
     const char hpUpChar = 'U';
@@ -98,12 +98,14 @@ int main () {
     global_player_y = COLS/2;
     int local_player_x = global_player_x;
     int local_player_y = global_player_y;
+    int startLines = LINES;
+    int startCols = COLS;
 ////// end of variable initialization
 
 ////// color pairs initialization
     init_pair(1, COLOR_YELLOW, COLOR_BLACK);
     init_pair(2, COLOR_RED, COLOR_BLACK);
-    init_pair(3, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(3, COLOR_CYAN, COLOR_BLACK);
     init_pair(4, COLOR_GREEN, COLOR_BLACK);
 ////// end of color pairs initialization
 
@@ -113,6 +115,13 @@ int main () {
     clear();
 
     while (!exitFlag) {
+        if (startLines != LINES || startCols != COLS) {
+            logMessage ("changed screen size", 'e');
+            endwin();
+            fout.close();
+            printf("\x1b[0m"); //disables any color modificators
+            exit(6);
+        }
         checkPause();
         if (!pauseFlag) {
             if (!(counter % 300)) { //if counter%300 == 0 increase difficulty
