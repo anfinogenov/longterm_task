@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <cmath>
+#include <cstring>
 #include <string>
 #include <cctype>
 #include <pthread.h>
@@ -32,14 +33,14 @@ static bool pauseFlag = false;
 static int leftWall;
 static int rightWall;
 
-void*   multithread_movement (void* arg);
-int     movePlayer (const int & key);
-void    checkPlayer (int & local_x, int & local_y);
-void    logMessage (const std::string & msg, char msgType);
+void*   multithread_movement (void*);
+int     movePlayer (const int &);
+void    checkPlayer (int &, int &);
+void    logMessage (const std::string &, char);
 void    printWalls (void);
 void    logCounter (void);
 void    generateNewLine (void);
-bool    isWall (const int &x, const int &y);
+bool    isWall (const int &, const int &);
 void    checkScreen (void);
 void    insertCounter (void);
 int     scoreAndExit (void);
@@ -118,6 +119,9 @@ int main () {
                 clear();
                 mvprintw(counterFirstLn, rightWall + 3, "Level %d!", ++difficulty);
                 bonus::rate += bonus::rateModifier;
+                char msg[27] = {0};
+                sprintf(msg, "reached level %d", difficulty);
+                logMessage (msg,'n');
             }
             points += (float)(difficulty*difficulty)/dif_modifier;
             //every tick increases points, depending on current difficulty
@@ -226,6 +230,11 @@ void printWalls () {
 void generateNewLine () {
     move(0, 0); insertln();
     insertCounter();
+    if (dif_modifier == difficulty) {
+        logMessage ("reached level 21", 'e');
+        exitFlag = true;
+        return;
+    }
     if (!(counter++ % (dif_modifier/difficulty))) {
         int len = rand()%wallsWidth/4;
         int start = rand()%wallsWidth + leftWall;
@@ -270,28 +279,30 @@ bool isWall(const int &x, const int &y) {
 }
 
 void logMessage (const std::string & msg, char msgType) {
-    std::string msg_type;
+    char msg_type[5];
     switch (msgType) { //converting char msgType to string
         case 'n':
-            msg_type = "okay";
+            strcpy(msg_type, "okay");
             break;
         case 'w':
-            msg_type = "warn";
+            strcpy(msg_type, "warn");
             break;
         case 'e':
-            msg_type = "err ";
+            strcpy(msg_type, "err ");
             break;
         default :
-            msg_type = "unkn";
+            strcpy(msg_type, "unkn");
             break;
     }
-    fout << msg_type + " [" << time(NULL) - startTime << "]: " << msg << std::endl;
+    fout << msg_type << " [" << time(NULL) - startTime << "]: " << msg << std::endl;
     //out message with msgType and time from start
 }
 
 void checkScreen () {
     if (COLS < (wallsWidth+30) || LINES < minLines) {
-        logMessage ("incorrect screen size", 'e');
+        char msg[100] = {0};
+        sprintf(msg, "incorrect screen size\nyour:\t%dw\t\t%dh\ncorrect:%dw min.\t%dh min.", LINES, COLS, minLines, wallsWidth+30);
+        logMessage (msg, 'e');
         endwin();
         exit (4);
     }
