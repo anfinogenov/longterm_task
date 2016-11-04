@@ -94,7 +94,7 @@ int main () {
     pthread_create(&move_thread, NULL, multithread_movement, NULL); //starts movePlayer-func in other thread
 
     clear();
-
+    log_out("main logic starts", 'n');
     while (!exitFlag) {
         if (startLines != LINES || startCols != COLS) exit_s("changed screen size", 'e');
         if (!isPause()) {
@@ -121,15 +121,16 @@ int main () {
         napms(1000/fps); //make moves fps times per second
         flushinp(); //remove any unattended input
     }
+    log_out("main logic ends", 'n');
     pthread_cancel(move_thread);
     if(scoreAndExit()) {
         endwin();
         logCounter();
+        log_out("", 'q');
         fout.close();
         system("./dd3o.exe");
     }
-
-    exit_s("program exited normally\n", 'n');
+    exit_s("program exited normally", 'n');
     return 0;
 }
 
@@ -268,6 +269,12 @@ void log_out (const std::string & msg, char msgType) {
         case 'e':
             strcpy(msg_type, "err ");
             break;
+        case 'q':
+            fout << "-- END OF LOG --" << std::endl;
+            return;
+        case 's':
+            fout << "-- START OF LOG --" << std::endl;
+            return;
         default :
             strcpy(msg_type, "unkn");
             break;
@@ -293,15 +300,6 @@ void logCounter () { //logs lines counter and current points to log file
     log_out(temp, 'n');
     sprintf(temp, "points is %d", (int)points);
     log_out(temp, 'n');
-}
-
-int scoreAndExit() {
-    char exitkey; //temp variable to store user key
-    mvprintw (LINES/2 - 1, COLS/2 - 17, "   Game over: Your score is %d   ", (int)points);
-    mvprintw (LINES/2    , COLS/2 - 11, "   Press 'q' to exit   ");
-    mvprintw (LINES/2 + 1, COLS/2 - 15, "   or press 'r' to restart   ");
-    while (tolower(exitkey = getch()) != 'q') if (exitkey == 'r') return 1; //awaits for 'q' to  exit
-    return 0;
 }
 
 void bonus::shoot () {
@@ -363,6 +361,7 @@ void log_open_s (void) {
     if(!fout.is_open()) {
         std::cerr << "cannot open log file\n"; exit(1);
     }
+    log_out("", 's');
     sprintf(temp, "start time is %lu", startTime);
     log_out(temp, 'n');
     delete[] temp;
@@ -407,7 +406,21 @@ void exit_s (char* msg, char msg_type) {
     logCounter();
     endwin();
     log_out(msg, msg_type);
+    log_out("", 'q');
     fout.close();
     printf("\x1b[0m");
     exit(1);
+}
+
+void print_score (void) {
+    mvprintw (LINES/2 - 1, COLS/2 - 17, "   Game over: Your score is %d   ", (int)points);
+    mvprintw (LINES/2    , COLS/2 - 11, "   Press 'q' to exit   ");
+    mvprintw (LINES/2 + 1, COLS/2 - 15, "   or press 'r' to restart   ");
+}
+
+int scoreAndExit() {
+    char exitkey; //temp variable to store user key
+    print_score();
+    while (tolower(exitkey = getch()) != 'q') if (exitkey == 'r') return 1; //awaits for 'q' to  exit
+    return 0;
 }
