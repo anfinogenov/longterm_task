@@ -10,17 +10,17 @@
 #include <pthread.h>
 #include <unistd.h>
 
-const char playerChar   = 'A';
-const char obstacleChar = '#';
-const char wallChar     = 'X';
-const int  wallsWidth   = 49; // only mod2 = 1
-const long startTime    = time(NULL);
-const int  minLines     = 35; // exit if less or equal
-const int  dif_modifier = 20; // 1 obstacle in (dif_modifier/difficulty) lines
-const int  counterFirstLn  = 3;
-const int  playerLives  = 15;
+const char playerChar     = 'A';
+const char obstacleChar   = '#';
+const char wallChar       = 'X';
+const int  wallsWidth     = 49; // only mod2 = 1
+const long startTime      = time(NULL);
+const int  minLines       = 35; // exit if less or equal
+const int  dif_modifier   = 20; // 1 obstacle in (dif_modifier/difficulty) lines
+const int  counterFirstLn = 3;
+const int  playerLives    = 15;
+const int fps = 15;
 
-static int fps = 15;
 static std::ofstream fout;
 static int global_player_x = 10;
 static int global_player_y = 10;
@@ -203,7 +203,7 @@ void checkPlayer (int & local_x, int & local_y) {
                 break;
         }
 
-    if (global_player_x >= LINES - 1) { //global
+    if (global_player_x >= LINES - 1) { //if player touches red line on bottom sets exitflag and logs msg 
         logMessage ("player fell out", 'n');
         exitFlag = true;
     }
@@ -214,7 +214,7 @@ int movePlayer (const int & key) {
     switch (key) {
         case KEY_RIGHT:
             new_coord = global_player_y + 1;
-            if (!isWall(global_player_x, new_coord))
+            if (!isWall(global_player_x, new_coord)) //checks if there is no wall
                 global_player_y = new_coord;
             break;
         case KEY_LEFT:
@@ -229,35 +229,35 @@ int movePlayer (const int & key) {
 void printWalls () {
     generateNewLine();
     for (int i = 0; i < LINES; i++) {
-        mvaddch(i, leftWall, wallChar | COLOR_PAIR(1));
-        mvaddch(i, rightWall, wallChar | COLOR_PAIR(1));
+        mvaddch(i, leftWall, wallChar | COLOR_PAIR(1)); //draws left orange wall
+        mvaddch(i, rightWall, wallChar | COLOR_PAIR(1)); //draws right orange wall
     }
     for (int i = 1; i <= wallsWidth; i++)
-        mvaddch(LINES-1,i+leftWall, wallChar | COLOR_PAIR(2) | A_DIM);
+        mvaddch(LINES-1,i+leftWall, wallChar | COLOR_PAIR(2) | A_DIM); //draws red bottom
 }
 
 void generateNewLine () {
-    move(0, 0); insertln();
-    insertCounter();
-    if (dif_modifier == difficulty) {
+    move(0, 0); insertln();  //adds new empty line at the top of the screen
+    insertCounter(); //prints counter
+    if (dif_modifier == difficulty) { //avoids zero-division on 21 level, just ends the game
         logMessage ("reached level 21", 'e');
         exitFlag = true;
         return;
     }
-    if (!(counter++ % (dif_modifier/difficulty))) {
-        int len = rand()%wallsWidth/4;
-        int start = rand()%wallsWidth + leftWall;
-        for (int i = 0; i < len; i++) {
+    if (!(counter++ % (dif_modifier/difficulty))) { //generate new obstacle 1 time in dif/dif lines
+        int len = rand()%wallsWidth/4; //generate len of obstacle
+        int start = rand()%wallsWidth + leftWall; //generate starting point inside walls
+        for (int i = 0; i < len; i++) { //prints obstacle in two directions
             if (start + i < rightWall) mvaddch(0, start + i, obstacleChar);
             if (start - i > leftWall) mvaddch(0, start - i, obstacleChar);
         }
     }
-    else if (!(counter % bonus::rate)) bonus::generateBonus();
+    else if (!(counter % bonus::rate)) bonus::generateBonus(); //if there is no obstacle on new line, try to generate bonus
 }
 
 void insertCounter () {
     int secondLn = counterFirstLn+1;
-    for (int i = 0; i < leftWall; i++) {
+    for (int i = 0; i < leftWall; i++) { //clears space from left side of the screen to left wall
         mvaddch(secondLn, i, ' ');
         mvaddch(secondLn+1, i, ' ');
         mvaddch(secondLn+3, i, ' ');
@@ -267,7 +267,7 @@ void insertCounter () {
         mvaddch(secondLn+9, i, ' ');
         mvaddch(secondLn+10, i, ' ');
     }
-    mvprintw(counterFirstLn,    leftWall - 13, "Points:");
+    mvprintw(counterFirstLn,    leftWall - 13, "Points:"); //then puts there some information for player
     mvprintw(counterFirstLn+1,  leftWall - 13, "%d", (int)points);
     mvprintw(counterFirstLn+3,  leftWall - 13, "Time:");
     mvprintw(counterFirstLn+4,  leftWall - 13, "%d", time(NULL) - startTime);
@@ -276,15 +276,15 @@ void insertCounter () {
     mvprintw(counterFirstLn+9,  leftWall - 13, "Lives:");
     mvprintw(counterFirstLn+10, leftWall - 13, "%d", LINES - global_player_x - 1);
 
-    return;
+    return; 
 }
 
 bool isWall(const int &x, const int &y) {
-    move(x, y);
-    char checkedPoint = inch();
-    if(checkedPoint == wallChar || checkedPoint == obstacleChar)
-        return true;
-    return false;
+    move(x, y); //moves cursor to coordinates
+    char checkedPoint = inch(); //get char from there
+    if(checkedPoint == wallChar || checkedPoint == obstacleChar) 
+        return true; //if it is wall under cursor - returns true
+    return false; //else there is no wall
 }
 
 void logMessage (const std::string & msg, char msgType) {
@@ -311,14 +311,14 @@ void checkScreen () {
     if (COLS < (wallsWidth+30) || LINES < minLines) {
         char msg[100] = {0};
         sprintf(msg, "incorrect screen size\nyour:\t%dw\t\t%dh\ncorrect:%dw min.\t%dh min.", LINES, COLS, minLines, wallsWidth+30);
-        logMessage (msg, 'e');
+        logMessage (msg, 'e'); //if screen is smaller than minimum puts error message to log file and close app
         endwin();
         exit (4);
     }
-    logMessage ("screen size is correct", 'n');
+    logMessage ("screen size is correct", 'n'); //else puts okay msg to log and continue
 }
 
-void logCounter () {
+void logCounter () { //logs lines counter and current points to log file
     char temp[25] = {0};
     sprintf(temp, "counter is %d", counter);
     logMessage (temp, 'n');
@@ -328,7 +328,7 @@ void logCounter () {
 }
 
 int scoreAndExit() {
-    char exitkey;
+    char exitkey; //temp variable to store user key
     mvprintw (LINES/2 - 1, COLS/2 - 17, "   Game over: Your score is %d   ", (int)points);
     mvprintw (LINES/2    , COLS/2 - 11, "   Press 'q' to exit   ");
     mvprintw (LINES/2 + 1, COLS/2 - 15, "   or press 'r' to restart   ");
@@ -340,23 +340,23 @@ void bonus::shoot () {
     for (int i = global_player_x-1; i > 0; i--) {
         for (int y = global_player_y-1; y <= global_player_y+1; y++) {
             move (i, y);
-            if(inch() == obstacleChar)
+            if(inch() == obstacleChar) //clears vertical 3char-wide line on screen
                 addch (' ');
         }
     }
 }
 
 void bonus::hpUp () {
-    global_player_x -= hpUpBonus;
+    global_player_x -= hpUpBonus; //puts player 5 lines above
 }
 
 void bonus::hpDown () {
-    global_player_x += hpDownBonus;
+    global_player_x += hpDownBonus; //puts player 5 lines below
 }
 
 void bonus::generateBonus () {
-    int bonus_x = leftWall + rand()%wallsWidth;
-    switch (rand()%3) {
+    int bonus_x = leftWall + rand()%wallsWidth; //generate point inside walls
+    switch (rand()%3) { //generates bonus to place
         case 0:
             mvaddch(0, bonus_x, bonus::shootChar | COLOR_PAIR(3));
             break;
