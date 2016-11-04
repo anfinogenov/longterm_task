@@ -13,17 +13,25 @@
 const char playerChar     = 'A';
 const char obstacleChar   = '#';
 const char wallChar       = 'X';
-const int  wallsWidth     = 49; // only mod2 = 1
+const int  wallsWidth     = 49;
 const long startTime      = time(NULL);
 const int  minLines       = 35; // exit if less or equal
 const int  dif_modifier   = 20; // 1 obstacle in (dif_modifier/difficulty) lines
 const int  counterFirstLn = 3;
 const int  playerLives    = 15;
-const int fps = 15;
+const int  fps = 15;
+
+namespace color {
+    const int yellow = 1;
+    const int red = 2;
+    const int cyan = 3;
+    const int green = 4;
+    const int black = 5;
+}
 
 static std::ofstream fout;
-static int global_player_x = 10;
-static int global_player_y = 10;
+static int global_player_x = 0;
+static int global_player_y = 0;
 static int difficulty = 0;
 static int counter = 0;
 static float points = 0;
@@ -33,10 +41,17 @@ static bool pauseFlag = false;
 static int leftWall;
 static int rightWall;
 
+//new functions
+void    log_open_s (void);
+void    ncurses_init_s (void);
+void    variable_init (void);
+void    exit_s (char*, char);
+//
+
 void*   multithread_movement (void*);
 int     movePlayer (const int &);
 void    checkPlayer (int &, int &);
-void    logMessage (const std::string &, char);
+void    log_out (const std::string &, char);
 void    printWalls (void);
 void    logCounter (void);
 void    generateNewLine (void);
@@ -44,11 +59,10 @@ bool    isWall (const int &, const int &);
 void    checkScreen (void);
 void    insertCounter (void);
 int     scoreAndExit (void);
-void    checkPause (void);
+bool    isPause (void);
 
 namespace bonus {
     static int rate = 13;
-    const int rateModifier = 1;
 
     const char shootChar = 'S';
     void shoot (void);
@@ -66,48 +80,15 @@ namespace bonus {
 
 int main () {
 
-////// initialization routines
-    srand(time(NULL));
-    char logFileName[50] = {0};
-    sprintf(logFileName, "logs/log-%lu.txt", time(NULL));
-    fout.open(logFileName);
-    if(!fout.is_open()) {
-        std::cerr << "cannot open log file\n"; exit(1);
-    }
-    if(!initscr()) {
-        logMessage ("initscr() failed", 'e'); exit(2);
-    }
-    logMessage ("initscr executed normally", 'n');
-    noecho();
-    curs_set(0);
-    raw();
-    keypad(stdscr, TRUE);
-    checkScreen();
-    if(!has_colors()) {
-        endwin();
-        logMessage ("colors isn't allowed in this terminal", 'e');
-        exit(5);
-    }
-    start_color();
-////// end of routines
+    srand(time(nullptr));
+    log_open_s();
+    ncurses_init_s();
+    variable_init();
 
-////// variable initialization
-    leftWall = (COLS/2) - wallsWidth/2 - 1;
-    rightWall = (COLS/2) + wallsWidth/2 + 1;
-    global_player_x = LINES - playerLives - 1; //player starts with playerLives lines above bottom
-    global_player_y = COLS/2;
     int local_player_x = global_player_x;
     int local_player_y = global_player_y;
     int startLines = LINES;
     int startCols = COLS;
-////// end of variable initialization
-
-////// color pairs initialization
-    init_pair(1, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(2, COLOR_RED, COLOR_BLACK);
-    init_pair(3, COLOR_CYAN, COLOR_BLACK);
-    init_pair(4, COLOR_GREEN, COLOR_BLACK);
-////// end of color pairs initialization
 
     pthread_t move_thread;
     pthread_create(&move_thread, NULL, multithread_movement, NULL); //starts movePlayer-func in other thread
@@ -115,22 +96,14 @@ int main () {
     clear();
 
     while (!exitFlag) {
-        if (startLines != LINES || startCols != COLS) {
-            logMessage ("changed screen size", 'e');
-            endwin();
-            fout.close();
-            printf("\x1b[0m"); //disables any color modificators
-            exit(6);
-        }
-        checkPause();
-        if (!pauseFlag) {
+        if (startLines != LINES || startCols != COLS) exit_s("changed screen size", 'e');
+        if (!isPause()) {
             if (!(counter % 300)) { //if counter%300 == 0 increase difficulty
                 clear();
                 mvprintw(counterFirstLn, rightWall + 3, "Level %d!", ++difficulty);
-                bonus::rate += bonus::rateModifier;
                 char msg[27] = {0};
                 sprintf(msg, "reached level %d", difficulty);
-                logMessage (msg,'n');
+                log_out(msg,'n');
             }
             points += (float)(difficulty*difficulty)/dif_modifier;
             //every tick increases points, depending on current difficulty
@@ -155,12 +128,8 @@ int main () {
         fout.close();
         system("./dd3o.exe");
     }
-    endwin(); //closes curses screen
-    logCounter();
-    logMessage ("program exited normally", 'n');
-    fout.close();
-    printf("\x1b[0m"); //disables any color modificators
 
+    exit_s("program exited normally\n", 'n');
     return 0;
 }
 
@@ -172,11 +141,11 @@ void* multithread_movement (void* arg) {
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 
         if (tolower(key) =='q') exitFlag = true;
-        if (tolower(key) == ' ') pauseFlag = !pauseFlag;
+        else if (tolower(key) == ' ') pauseFlag ^= 1; //inverts pauseFlag
         flushinp(); // removes any unattended input
         napms(1000/fps);
     }
-    return NULL;
+    return nullptr;
 }
 
 void checkPlayer (int & local_x, int & local_y) {
@@ -202,9 +171,8 @@ void checkPlayer (int & local_x, int & local_y) {
             default:
                 break;
         }
-
     if (global_player_x >= LINES - 1) { //if player touches red line on bottom sets exitflag and logs msg 
-        logMessage ("player fell out", 'n');
+        log_out("player fell out", 'n');
         exitFlag = true;
     }
 }
@@ -224,23 +192,24 @@ int movePlayer (const int & key) {
             break;
         default: break;
     }
+    return 0;
 }
 
 void printWalls () {
     generateNewLine();
     for (int i = 0; i < LINES; i++) {
-        mvaddch(i, leftWall, wallChar | COLOR_PAIR(1)); //draws left orange wall
-        mvaddch(i, rightWall, wallChar | COLOR_PAIR(1)); //draws right orange wall
+        mvaddch(i, leftWall, wallChar | COLOR_PAIR(color::yellow)); //draws left orange wall
+        mvaddch(i, rightWall, wallChar | COLOR_PAIR(color::yellow)); //draws right orange wall
     }
     for (int i = 1; i <= wallsWidth; i++)
-        mvaddch(LINES-1,i+leftWall, wallChar | COLOR_PAIR(2) | A_DIM); //draws red bottom
+        mvaddch(LINES-1,i+leftWall, wallChar | COLOR_PAIR(color::red) | A_DIM); //draws red bottom
 }
 
 void generateNewLine () {
     move(0, 0); insertln();  //adds new empty line at the top of the screen
     insertCounter(); //prints counter
     if (dif_modifier == difficulty) { //avoids zero-division on 21 level, just ends the game
-        logMessage ("reached level 21", 'e');
+        log_out("reached level 21", 'e');
         exitFlag = true;
         return;
     }
@@ -287,8 +256,8 @@ bool isWall(const int &x, const int &y) {
     return false; //else there is no wall
 }
 
-void logMessage (const std::string & msg, char msgType) {
-    char msg_type[5];
+void log_out (const std::string & msg, char msgType) {
+    static char msg_type[5];
     switch (msgType) { //converting char msgType to string
         case 'n':
             strcpy(msg_type, "okay");
@@ -310,21 +279,20 @@ void logMessage (const std::string & msg, char msgType) {
 void checkScreen () {
     if (COLS < (wallsWidth+30) || LINES < minLines) {
         char msg[100] = {0};
-        sprintf(msg, "incorrect screen size\nyour:\t%dw\t\t%dh\ncorrect:%dw min.\t%dh min.", LINES, COLS, minLines, wallsWidth+30);
-        logMessage (msg, 'e'); //if screen is smaller than minimum puts error message to log file and close app
+        sprintf(msg, "incorrect screen size\n\t  your:\t%dh\t\t%dw\n\t  correct: %dh min.\t%dw min.", LINES, COLS, minLines, wallsWidth+30);
+        log_out(msg, 'e'); //if screen is smaller than minimum puts error message to log file and close app
         endwin();
         exit (4);
     }
-    logMessage ("screen size is correct", 'n'); //else puts okay msg to log and continue
+    log_out("screen size is correct", 'n'); //else puts okay msg to log and continue
 }
 
 void logCounter () { //logs lines counter and current points to log file
     char temp[25] = {0};
     sprintf(temp, "counter is %d", counter);
-    logMessage (temp, 'n');
+    log_out(temp, 'n');
     sprintf(temp, "points is %d", (int)points);
-    logMessage (temp, 'n');
-
+    log_out(temp, 'n');
 }
 
 int scoreAndExit() {
@@ -340,14 +308,17 @@ void bonus::shoot () {
     for (int i = global_player_x-1; i > 0; i--) {
         for (int y = global_player_y-1; y <= global_player_y+1; y++) {
             move (i, y);
-            if(inch() == obstacleChar) //clears vertical 3char-wide line on screen
+            if(inch() == obstacleChar) { //clears vertical 3-char-wide line on screen
+                points += (float)difficulty; //and gives points for every obstacle
                 addch (' ');
+            }
         }
     }
 }
 
 void bonus::hpUp () {
     global_player_x -= hpUpBonus; //puts player 5 lines above
+    points += (float)difficulty*difficulty;
 }
 
 void bonus::hpDown () {
@@ -358,29 +329,85 @@ void bonus::generateBonus () {
     int bonus_x = leftWall + rand()%wallsWidth; //generate point inside walls
     switch (rand()%3) { //generates bonus to place
         case 0:
-            mvaddch(0, bonus_x, bonus::shootChar | COLOR_PAIR(3));
+            mvaddch(0, bonus_x, bonus::shootChar | COLOR_PAIR(color::cyan));
             break;
         case 1:
-            mvaddch(0, bonus_x, bonus::hpUpChar | COLOR_PAIR(4));
+            mvaddch(0, bonus_x, bonus::hpUpChar | COLOR_PAIR(color::green));
             break;
         case 2:
-            mvaddch(0, bonus_x, bonus::hpDownChar | COLOR_PAIR(2));
+            mvaddch(0, bonus_x, bonus::hpDownChar | COLOR_PAIR(color::red));
             break;
         default:
             break;
     }
 }
 
-void checkPause () {
-    if (!pauseFlag)
-        for (int i = 0; i < leftWall; i++) {
-            mvprintw (LINES/2-1, leftWall - 13, "Space   ");
-            mvprintw (LINES/2,   leftWall - 13, "to pause");
-            mvprintw (LINES/2+1, leftWall - 13, "        ");
-        }
-    else {
+bool isPause () {
+    if (pauseFlag) {
         mvprintw (LINES/2,   leftWall - 13, "Paused      ");
         mvprintw (LINES/2+1, leftWall - 13, "            ");
+        return true;
     }
-    refresh();
+    else {
+        mvprintw (LINES/2-1, leftWall - 13, "Space   ");
+        mvprintw (LINES/2,   leftWall - 13, "to pause");
+        mvprintw (LINES/2+1, leftWall - 13, "        ");
+        return false;
+    }
+}
+
+void log_open_s (void) {
+    char *temp = new char[40];
+    sprintf(temp, "logs/log-%lu.txt", time(NULL));
+    fout.open(temp);
+    if(!fout.is_open()) {
+        std::cerr << "cannot open log file\n"; exit(1);
+    }
+    sprintf(temp, "start time is %lu", startTime);
+    log_out(temp, 'n');
+    delete[] temp;
+}
+
+void screen_init_s (void) {
+    if(!initscr()) exit_s("initscr() failed", 'e');
+    log_out("initscr executed normally", 'n');
+}
+
+void color_init_s (void) {
+    if(!has_colors()) {
+        endwin();
+        log_out("colors isn't allowed in this terminal", 'e');
+        exit(5);
+    }
+    start_color();
+    init_pair(color::yellow, COLOR_YELLOW, COLOR_BLACK); // color pairs initialization
+    init_pair(color::red, COLOR_RED, COLOR_BLACK);
+    init_pair(color::cyan, COLOR_CYAN, COLOR_BLACK);
+    init_pair(color::green, COLOR_GREEN, COLOR_BLACK);
+}
+
+void ncurses_init_s (void) {
+    screen_init_s();
+    checkScreen();
+    noecho();
+    curs_set(0);
+    raw();
+    keypad(stdscr, 1);
+    color_init_s();
+}
+
+void variable_init (void) {
+    leftWall = (COLS/2) - wallsWidth/2 - 1;
+    rightWall = (COLS/2) + wallsWidth/2 + 1;
+    global_player_x = LINES - playerLives - 1; //player starts with playerLives lines above bottom
+    global_player_y = COLS/2;
+}
+
+void exit_s (char* msg, char msg_type) {
+    logCounter();
+    endwin();
+    log_out(msg, msg_type);
+    fout.close();
+    printf("\x1b[0m");
+    exit(1);
 }
