@@ -1,7 +1,7 @@
 all: dd3o
 
 dd3o: main.cxx
-	g++ -o dd3o.exe main.cxx -std=c++11 -Wall -lbass -lpthread -lncurses
+	g++ -o dd3o.exe main.cxx -std=c++11 -Wall -L. -lbass -lpthread -lncurses
 
 clean:
 	rm dd3o.exe
