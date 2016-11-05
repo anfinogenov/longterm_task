@@ -9,6 +9,7 @@
 #include <cctype>
 #include <pthread.h>
 #include <unistd.h>
+#include "bass.h"
 
 const char playerChar     = 'A';
 const char obstacleChar   = '#';
@@ -85,6 +86,24 @@ int main () {
     ncurses_init_s();
     variable_init();
 
+    ///BASS init
+    if (HIWORD(BASS_GetVersion())!=BASSVERSION) {
+            exit_s("BASS version err", 'e');
+            return 1;
+    }
+    if (!BASS_Init (-1, 22050, BASS_DEVICE_3D , 0, NULL)) {
+            exit_s("BASS init failure", 'e');
+            return 1;
+    }
+    ///BASS end init
+    char filename[] = "music/background.mp3";
+    HSTREAM stream;
+    stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, 0);
+    if (!stream) exit_s("BASS stream err", 'e');
+    BASS_ChannelPlay(stream,TRUE);
+    BASS_ChannelStop(stream);
+    BASS_StreamFree(stream);
+
     int local_player_x = global_player_x;
     int local_player_y = global_player_y;
     int startLines = LINES;
@@ -130,6 +149,7 @@ int main () {
         fout.close();
         system("./dd3o.exe");
     }
+    BASS_Free();
     exit_s("program exited normally", 'n');
     return 0;
 }
