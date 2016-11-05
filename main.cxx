@@ -101,8 +101,6 @@ int main () {
     stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, 0);
     if (!stream) exit_s("BASS stream err", 'e');
     BASS_ChannelPlay(stream,TRUE);
-    BASS_ChannelStop(stream);
-    BASS_StreamFree(stream);
 
     int local_player_x = global_player_x;
     int local_player_y = global_player_y;
@@ -142,6 +140,9 @@ int main () {
     }
     log_out("main logic ends", 'n');
     pthread_cancel(move_thread);
+    BASS_ChannelStop(stream);
+    BASS_StreamFree(stream);
+    BASS_Free();
     if(scoreAndExit()) {
         endwin();
         logCounter();
@@ -149,7 +150,6 @@ int main () {
         fout.close();
         system("./dd3o.exe");
     }
-    BASS_Free();
     exit_s("program exited normally", 'n');
     return 0;
 }
