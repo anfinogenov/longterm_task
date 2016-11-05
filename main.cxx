@@ -39,7 +39,7 @@ static float points = 0;
 static bool exitFlag = false;
 static bool pauseFlag = false;
 
-HSTREAM back_stream, game_over_stream, hp_up_stream, hp_down_stream, shoot_stream;
+HSTREAM back_stream, game_over_stream, hp_up_stream, hp_down_stream, shoot_stream, lvl_stream;
 static int leftWall;
 static int rightWall;
 
@@ -103,6 +103,7 @@ int main () {
         if (!isPause()) {
             if (!(counter % 300)) { //if counter%300 == 0 increase difficulty
                 clear();
+                BASS_ChannelPlay(lvl_stream,TRUE);
                 mvprintw(counterFirstLn, rightWall + 3, "Level %d!", ++difficulty);
                 char msg[27] = {0};
                 sprintf(msg, "reached level %d", difficulty);
@@ -429,18 +430,21 @@ void music_init_s (void) {
     char hp_up[] = "music/beep1.mp3";
     char hp_down[] = "music/beep2.mp3";
     char shoot[] = "music/shoot1.mp3";
+    char lvl[] = "music/level1.mp3";
 
     back_stream = BASS_StreamCreateFile(FALSE, background, 0, 0, 0);
     game_over_stream = BASS_StreamCreateFile(FALSE, game_over, 0, 0, 0);
     hp_up_stream = BASS_StreamCreateFile(FALSE, hp_up, 0, 0, 0);
     hp_down_stream = BASS_StreamCreateFile(FALSE, hp_down, 0, 0, 0);
     shoot_stream = BASS_StreamCreateFile(FALSE, shoot, 0, 0, 0);
+    lvl_stream = BASS_StreamCreateFile(FALSE, lvl, 0, 0, 0);
 
     if (!back_stream) exit_s("BASS stream err", 'e');
     if (!game_over_stream) exit_s("BASS stream err", 'e');
     if (!hp_up_stream) exit_s("BASS stream err", 'e');
     if (!hp_down_stream) exit_s("BASS stream err", 'e');
     if (!shoot_stream) exit_s("BASS stream err", 'e');
+    if (!lvl_stream) exit_s("BASS stream err", 'e');
 
     BASS_ChannelPlay(back_stream,TRUE);
 }
