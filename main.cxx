@@ -99,7 +99,7 @@ int main () {
     clear();
     log_out("main logic starts", 'n');
     while (!exitFlag) {
-        if (startLines != LINES || startCols != COLS) exit_s("changed screen size", 'e');
+        if (startLines != LINES || startCols != COLS) exit_s((char*)"changed screen size", 'e');
         if (!isPause()) {
             if (!(counter % 300)) { //if counter%300 == 0 increase difficulty
                 clear();
@@ -137,7 +137,7 @@ int main () {
         fout.close();
         system("./dd3o.exe");
     }
-    exit_s("program exited normally", 'n');
+    exit_s((char*)"program exited normally", 'n');
     return 0;
 }
 
@@ -375,14 +375,14 @@ void log_open_s (void) {
 }
 
 void screen_init_s (void) {
-    if(!initscr()) exit_s("initscr() failed", 'e');
+    if(!initscr()) exit_s((char*)"initscr() failed", 'e');
     log_out("initscr executed normally", 'n');
 }
 
 void color_init_s (void) {
     if(!has_colors()) {
         endwin();
-        exit_s("colors isn't allowed in this terminal", 'e');
+        exit_s((char*)"colors isn't allowed in this terminal", 'e');
     }
     start_color();
     init_pair(color::yellow, COLOR_YELLOW, COLOR_BLACK); // color pairs initialization
@@ -421,9 +421,9 @@ void exit_s (char* msg, char msg_type) {
 
 void music_init_s (void) {
     if (HIWORD(BASS_GetVersion())!=BASSVERSION)
-        exit_s("BASS version err", 'e');
+        exit_s((char*)"BASS version err", 'e');
     if (!BASS_Init (-1, 22050, BASS_DEVICE_3D , 0, NULL))
-        exit_s("BASS init failure", 'e');
+        exit_s((char*)"BASS init failure", 'e');
 
     char background[] = "music/background.mp3";
     char game_over[] = "music/off1.mp3";
@@ -439,12 +439,12 @@ void music_init_s (void) {
     shoot_stream = BASS_StreamCreateFile(FALSE, shoot, 0, 0, 0);
     lvl_stream = BASS_StreamCreateFile(FALSE, lvl, 0, 0, 0);
 
-    if (!back_stream) exit_s("BASS stream err", 'e');
-    if (!game_over_stream) exit_s("BASS stream err", 'e');
-    if (!hp_up_stream) exit_s("BASS stream err", 'e');
-    if (!hp_down_stream) exit_s("BASS stream err", 'e');
-    if (!shoot_stream) exit_s("BASS stream err", 'e');
-    if (!lvl_stream) exit_s("BASS stream err", 'e');
+    if (!back_stream) exit_s((char*)"background BASS stream err", 'e');
+    if (!game_over_stream) exit_s((char*)"gameover BASS stream err", 'e');
+    if (!hp_up_stream) exit_s((char*)"hpup BASS stream err", 'e');
+    if (!hp_down_stream) exit_s((char*)"hpdown BASS stream err", 'e');
+    if (!shoot_stream) exit_s((char*)"shoot BASS stream err", 'e');
+    if (!lvl_stream) exit_s((char*)"lvl BASS stream err", 'e');
 
     BASS_ChannelPlay(back_stream,TRUE);
 }
