@@ -39,15 +39,16 @@ static float points = 0;
 static bool exitFlag = false;
 static bool pauseFlag = false;
 
+HSTREAM back_stream, game_over_stream, hp_up_stream, hp_down_stream, shoot_stream;
 static int leftWall;
 static int rightWall;
 
-//new functions
 void    log_open_s (void);
 void    ncurses_init_s (void);
 void    variable_init (void);
 void    exit_s (char*, char);
-//
+void    music_init_s (void);
+void    music_gameover (void);
 
 void*   multithread_movement (void*);
 int     movePlayer (const int &);
@@ -85,22 +86,7 @@ int main () {
     log_open_s();
     ncurses_init_s();
     variable_init();
-
-    ///BASS init
-    if (HIWORD(BASS_GetVersion())!=BASSVERSION) {
-            exit_s("BASS version err", 'e');
-            return 1;
-    }
-    if (!BASS_Init (-1, 22050, BASS_DEVICE_3D , 0, NULL)) {
-            exit_s("BASS init failure", 'e');
-            return 1;
-    }
-    ///BASS end init
-    char filename[] = "music/background.mp3";
-    HSTREAM stream;
-    stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, 0);
-    if (!stream) exit_s("BASS stream err", 'e');
-    BASS_ChannelPlay(stream,TRUE);
+    music_init_s();
 
     int local_player_x = global_player_x;
     int local_player_y = global_player_y;
@@ -140,9 +126,9 @@ int main () {
     }
     log_out("main logic ends", 'n');
     pthread_cancel(move_thread);
-    BASS_ChannelStop(stream);
-    BASS_StreamFree(stream);
-    BASS_Free();
+    BASS_ChannelStop(back_stream);
+    BASS_StreamFree(back_stream);
+    music_gameover();
     if(scoreAndExit()) {
         endwin();
         logCounter();
@@ -177,14 +163,17 @@ void checkPlayer (int & local_x, int & local_y) {
             case bonus::hpUpChar:
                 addch(' ');
                 bonus::hpUp();
+                BASS_ChannelPlay(hp_up_stream,TRUE);
                 break;
             case bonus::hpDownChar:
                 addch(' ');
                 bonus::hpDown();
+                BASS_ChannelPlay(hp_down_stream,TRUE);
                 break;
             case bonus::shootChar:
                 addch(' ');
                 bonus::shoot();
+                BASS_ChannelPlay(shoot_stream,TRUE);
                 break;
             case obstacleChar:
                 global_player_x++;
@@ -424,8 +413,43 @@ void exit_s (char* msg, char msg_type) {
     log_out(msg, msg_type);
     log_out("", 'q');
     fout.close();
+    BASS_Free();
     printf("\x1b[0m");
     exit(1);
+}
+
+void music_init_s (void) {
+    if (HIWORD(BASS_GetVersion())!=BASSVERSION)
+        exit_s("BASS version err", 'e');
+    if (!BASS_Init (-1, 22050, BASS_DEVICE_3D , 0, NULL))
+        exit_s("BASS init failure", 'e');
+
+    char background[] = "music/background.mp3";
+    char game_over[] = "music/off1.mp3";
+    char hp_up[] = "music/beep1.mp3";
+    char hp_down[] = "music/beep2.mp3";
+    char shoot[] = "music/shoot1.mp3";
+
+    back_stream = BASS_StreamCreateFile(FALSE, background, 0, 0, 0);
+    game_over_stream = BASS_StreamCreateFile(FALSE, game_over, 0, 0, 0);
+    hp_up_stream = BASS_StreamCreateFile(FALSE, hp_up, 0, 0, 0);
+    hp_down_stream = BASS_StreamCreateFile(FALSE, hp_down, 0, 0, 0);
+    shoot_stream = BASS_StreamCreateFile(FALSE, shoot, 0, 0, 0);
+
+    if (!back_stream) exit_s("BASS stream err", 'e');
+    if (!game_over_stream) exit_s("BASS stream err", 'e');
+    if (!hp_up_stream) exit_s("BASS stream err", 'e');
+    if (!hp_down_stream) exit_s("BASS stream err", 'e');
+    if (!shoot_stream) exit_s("BASS stream err", 'e');
+
+    BASS_ChannelPlay(back_stream,TRUE);
+}
+
+void music_gameover (void) {
+    BASS_ChannelPlay(game_over_stream,TRUE);
+    napms(1500);
+    BASS_ChannelStop(game_over_stream);
+    BASS_StreamFree(game_over_stream);
 }
 
 void print_score (void) {
