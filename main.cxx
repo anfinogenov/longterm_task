@@ -245,8 +245,7 @@ void insertCounter () {
     mvprintw(counterFirstLn+7,  leftWall - 13, "%d", difficulty);
     mvprintw(counterFirstLn+9,  leftWall - 13, "Lives:");
     mvprintw(counterFirstLn+10, leftWall - 13, "%d", LINES - global_player_x - 1);
-
-    return; 
+    return;
 }
 
 bool isWall(const int &x, const int &y) {
@@ -287,9 +286,7 @@ void checkScreen () {
     if (COLS < (wallsWidth+30) || LINES < minLines) {
         char msg[100] = {0};
         sprintf(msg, "incorrect screen size\n\t  your:\t%dh\t\t%dw\n\t  correct: %dh min.\t%dw min.", LINES, COLS, minLines, wallsWidth+30);
-        log_out(msg, 'e'); //if screen is smaller than minimum puts error message to log file and close app
-        endwin();
-        exit (4);
+        exit_s(msg, 'e'); //if screen is smaller than minimum puts error message to log file and close app
     }
     log_out("screen size is correct", 'n'); //else puts okay msg to log and continue
 }
@@ -375,8 +372,7 @@ void screen_init_s (void) {
 void color_init_s (void) {
     if(!has_colors()) {
         endwin();
-        log_out("colors isn't allowed in this terminal", 'e');
-        exit(5);
+        exit_s("colors isn't allowed in this terminal", 'e');
     }
     start_color();
     init_pair(color::yellow, COLOR_YELLOW, COLOR_BLACK); // color pairs initialization
