@@ -16,7 +16,7 @@ const char obstacleChar   = '#';
 const char wallChar       = 'X';
 const int  wallsWidth     = 49;
 const long startTime      = time(NULL);
-const int  minLines       = 35; // exit if less or equal
+const int  minLines       = 42; // exit if less or equal
 const int  dif_modifier   = 20; // 1 obstacle in (dif_modifier/difficulty) lines
 const int  counterFirstLn = 3;
 const int  playerLives    = 15;
@@ -68,6 +68,7 @@ namespace bonus {
 
     const char shootChar = 'S';
     void shoot (void);
+    static int shots = 0;
 
     const char hpUpChar = 'U';
     const int hpUpBonus = 5;
@@ -173,8 +174,8 @@ void checkPlayer (int & local_x, int & local_y) {
                 break;
             case bonus::shootChar:
                 addch(' ');
-                bonus::shoot();
-                BASS_ChannelPlay(shoot_stream,TRUE);
+                bonus::shots++;
+                BASS_ChannelPlay(hp_up_stream,TRUE);
                 break;
             case obstacleChar:
                 global_player_x++;
@@ -201,6 +202,12 @@ int movePlayer (const int & key) {
             if (!isWall(global_player_x, new_coord))
                 global_player_y = new_coord;
             break;
+        case 's':
+            if (bonus::shots >= 1) {
+                bonus::shoot();
+                BASS_ChannelPlay(shoot_stream,TRUE);
+                bonus::shots--;
+            }
         default: break;
     }
     return 0;
@@ -236,16 +243,10 @@ void generateNewLine () {
 }
 
 void insertCounter () {
-    int secondLn = counterFirstLn+1;
     for (int i = 0; i < leftWall; i++) { //clears space from left side of the screen to left wall
-        mvaddch(secondLn, i, ' ');
-        mvaddch(secondLn+1, i, ' ');
-        mvaddch(secondLn+3, i, ' ');
-        mvaddch(secondLn+4, i, ' ');
-        mvaddch(secondLn+6, i, ' ');
-        mvaddch(secondLn+7, i, ' ');
-        mvaddch(secondLn+9, i, ' ');
-        mvaddch(secondLn+10, i, ' ');
+        for (int j = 0; j <= 17; j++) {
+            mvaddch(counterFirstLn + j, i, ' ');
+        }
     }
     mvprintw(counterFirstLn,    leftWall - 13, "Points:"); //then puts there some information for player
     mvprintw(counterFirstLn+1,  leftWall - 13, "%d", (int)points);
@@ -255,6 +256,10 @@ void insertCounter () {
     mvprintw(counterFirstLn+7,  leftWall - 13, "%d", difficulty);
     mvprintw(counterFirstLn+9,  leftWall - 13, "Lives:");
     mvprintw(counterFirstLn+10, leftWall - 13, "%d", LINES - global_player_x - 1);
+    mvprintw(counterFirstLn+12, leftWall - 13, "Shots left:");
+    mvprintw(counterFirstLn+13, leftWall - 13, "%d", bonus::shots);
+    mvprintw(counterFirstLn+15, leftWall - 13, "Lines to lvl:");
+    mvprintw(counterFirstLn+16, leftWall - 13, "%d", 300 - counter%300);
     return;
 }
 
@@ -425,14 +430,22 @@ void music_init_s (void) {
     if (!BASS_Init (-1, 22050, BASS_DEVICE_3D , 0, NULL))
         exit_s((char*)"BASS init failure", 'e');
 
-    char background[] = "music/background.mp3";
+    char background1[] = "music/background1.mp3";
+    char background2[] = "music/background2.mp3";
     char game_over[] = "music/off1.mp3";
     char hp_up[] = "music/beep1.mp3";
     char hp_down[] = "music/beep2.mp3";
     char shoot[] = "music/shoot1.mp3";
     char lvl[] = "music/level1.mp3";
 
-    back_stream = BASS_StreamCreateFile(FALSE, background, 0, 0, 0);
+    switch (rand()%2) {
+    case 0:
+        back_stream = BASS_StreamCreateFile(FALSE, background1, 0, 0, 0);
+        break;
+    case 1:
+        back_stream = BASS_StreamCreateFile(FALSE, background2, 0, 0, 0);
+        break;
+    }
     game_over_stream = BASS_StreamCreateFile(FALSE, game_over, 0, 0, 0);
     hp_up_stream = BASS_StreamCreateFile(FALSE, hp_up, 0, 0, 0);
     hp_down_stream = BASS_StreamCreateFile(FALSE, hp_down, 0, 0, 0);
