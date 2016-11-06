@@ -16,9 +16,9 @@ const char obstacleChar   = '#';
 const char wallChar       = 'X';
 const int  wallsWidth     = 49;
 const long startTime      = time(NULL);
-const int  minLines       = 42; // exit if less or equal
+const int  minLines       = 37; // exit if less or equal
 const int  dif_modifier   = 20; // 1 obstacle in (dif_modifier/difficulty) lines
-const int  counterFirstLn = 3;
+const int  counterFirstLn = 2;
 const int  playerLives    = 15;
 const int  fps = 15;
 
@@ -39,7 +39,8 @@ static float points = 0;
 static bool exitFlag = false;
 static bool pauseFlag = false;
 
-HSTREAM back_stream, game_over_stream, hp_up_stream, hp_down_stream, shoot_stream, lvl_stream;
+HSTREAM back_stream, game_over_stream, hp_up_stream, hp_down_stream;
+HSTREAM no_impact_stream, shoot_stream, lvl_stream;
 static int leftWall;
 static int rightWall;
 
@@ -49,6 +50,7 @@ void    variable_init (void);
 void    exit_s (char*, char);
 void    music_init_s (void);
 void    music_gameover (void);
+void    music_stop_s (void);
 
 void*   multithread_movement (void*);
 int     movePlayer (const int &);
@@ -57,26 +59,32 @@ void    log_out (const std::string &, char);
 void    printWalls (void);
 void    logCounter (void);
 void    generateNewLine (void);
-bool    isWall (const int &, const int &);
+bool    isWall (int, int);
 void    checkScreen (void);
 void    insertCounter (void);
 int     scoreAndExit (void);
 bool    isPause (void);
 
 namespace bonus {
-    static int rate = 13;
+    static int rate = 10;
 
-    const char shootChar = 'S';
+    const int shootChar = 'S';
     void shoot (void);
     static int shots = 0;
 
-    const char hpUpChar = 'U';
+    const int hpUpChar = 'U';
     const int hpUpBonus = 5;
     void hpUp (void);
 
-    const char hpDownChar = 'D';
+    const int hpDownChar = 'D';
     const int hpDownBonus = 5;
     void hpDown (void);
+
+    const int invulnerabilityChar = 'I';
+    void invulnerability (void);
+    bool vulnerable = true;
+    int startInvulnerability;
+    const unsigned short no_impact_duration = 60;
 
     void generateBonus (void);
 }
@@ -100,12 +108,14 @@ int main () {
     clear();
     log_out("main logic starts", 'n');
     while (!exitFlag) {
+        if (!BASS_ChannelIsActive(back_stream)) BASS_ChannelPlay(back_stream,TRUE);
         if (startLines != LINES || startCols != COLS) exit_s((char*)"changed screen size", 'e');
         if (!isPause()) {
             if (!(counter % 300)) { //if counter%300 == 0 increase difficulty
                 clear();
                 BASS_ChannelPlay(lvl_stream,TRUE);
-                mvprintw(counterFirstLn, rightWall + 3, "Level %d!", ++difficulty);
+                mvprintw(counterFirstLn+3, rightWall + 3, "Level %d!", ++difficulty);
+                bonus::shots++;
                 char msg[27] = {0};
                 sprintf(msg, "reached level %d", difficulty);
                 log_out(msg,'n');
@@ -131,6 +141,7 @@ int main () {
     BASS_ChannelStop(back_stream);
     BASS_StreamFree(back_stream);
     music_gameover();
+    music_stop_s();
     if(scoreAndExit()) {
         endwin();
         logCounter();
@@ -177,9 +188,15 @@ void checkPlayer (int & local_x, int & local_y) {
                 bonus::shots++;
                 BASS_ChannelPlay(hp_up_stream,TRUE);
                 break;
+            case bonus::invulnerabilityChar:
+                addch(' ');
+                bonus::invulnerability();
             case obstacleChar:
-                global_player_x++;
-                break;
+                if (!bonus::vulnerable && (bonus::startInvulnerability + bonus::no_impact_duration - counter)>0);
+                else {
+                    global_player_x++;
+                    bonus::vulnerable = true;
+                }
             default:
                 break;
         }
@@ -229,6 +246,7 @@ void generateNewLine () {
     if (dif_modifier == difficulty) { //avoids zero-division on 21 level, just ends the game
         log_out("reached level 21", 'e');
         exitFlag = true;
+        mvprintw(LINES/3, COLS/2-13, "OMG how did you get here?");
         return;
     }
     if (!(counter++ % (dif_modifier/difficulty))) { //generate new obstacle 1 time in dif/dif lines
@@ -239,7 +257,7 @@ void generateNewLine () {
             if (start - i > leftWall) mvaddch(0, start - i, obstacleChar);
         }
     }
-    else if (!(counter % bonus::rate)) bonus::generateBonus(); //if there is no obstacle on new line, try to generate bonus
+    if (!(counter % bonus::rate)) bonus::generateBonus(); //if there is no obstacle on new line, try to generate bonus
 }
 
 void insertCounter () {
@@ -248,26 +266,39 @@ void insertCounter () {
             mvaddch(counterFirstLn + j, i, ' ');
         }
     }
-    mvprintw(counterFirstLn,    leftWall - 13, "Points:"); //then puts there some information for player
+    for (int i = COLS; i > rightWall; i--) { //clears space from right side of the screen to right wall
+        for (int j = 0; j <= 2; j++) {
+            mvaddch(counterFirstLn + j, i, ' ');
+        }
+    }
+    mvprintw(counterFirstLn,    leftWall - 14, "Points:"); //then puts there some information for player
     mvprintw(counterFirstLn+1,  leftWall - 13, "%d", (int)points);
-    mvprintw(counterFirstLn+3,  leftWall - 13, "Time:");
+    mvprintw(counterFirstLn+3,  leftWall - 14, "Time:");
     mvprintw(counterFirstLn+4,  leftWall - 13, "%d", time(NULL) - startTime);
-    mvprintw(counterFirstLn+6,  leftWall - 13, "Difficulty:");
+    mvprintw(counterFirstLn+6,  leftWall - 14, "Difficulty:");
     mvprintw(counterFirstLn+7,  leftWall - 13, "%d", difficulty);
-    mvprintw(counterFirstLn+9,  leftWall - 13, "Lives:");
+    mvprintw(counterFirstLn+9,  leftWall - 14, "Lives:");
     mvprintw(counterFirstLn+10, leftWall - 13, "%d", LINES - global_player_x - 1);
-    mvprintw(counterFirstLn+12, leftWall - 13, "Shots left:");
+    mvprintw(counterFirstLn+12, leftWall - 14, "Shots left:");
     mvprintw(counterFirstLn+13, leftWall - 13, "%d", bonus::shots);
-    mvprintw(counterFirstLn+15, leftWall - 13, "Lines to lvl:");
+    mvprintw(counterFirstLn+15, leftWall - 14, "Lines to lvl:");
     mvprintw(counterFirstLn+16, leftWall - 13, "%d", 300 - counter%300);
+
+    if (!bonus::vulnerable && (bonus::startInvulnerability + bonus::no_impact_duration - counter) > 0) {
+        if (!BASS_ChannelIsActive(no_impact_stream)) BASS_ChannelPlay(no_impact_stream, TRUE);
+        mvprintw(counterFirstLn, rightWall + 2, "No impact for:");
+        mvprintw(counterFirstLn+1, rightWall + 2, "%d", bonus::startInvulnerability + bonus::no_impact_duration - counter);
+    }
+    else BASS_ChannelStop(no_impact_stream);
     return;
 }
 
-bool isWall(const int &x, const int &y) {
+bool isWall(int x, int y) {
     move(x, y); //moves cursor to coordinates
     char checkedPoint = inch(); //get char from there
-    if(checkedPoint == wallChar || checkedPoint == obstacleChar) 
-        return true; //if it is wall under cursor - returns true
+    if(checkedPoint == wallChar || checkedPoint == obstacleChar)
+        return true; //if it is wall under cursor returns true
+    checkPlayer(x, y);
     return false; //else there is no wall
 }
 
@@ -298,7 +329,7 @@ void log_out (const std::string & msg, char msgType) {
 }
 
 void checkScreen () {
-    if (COLS < (wallsWidth+30) || LINES < minLines) {
+    if (COLS < (wallsWidth+32) || LINES < minLines) {
         char msg[100] = {0};
         sprintf(msg, "incorrect screen size\n\t  your:\t%dh\t\t%dw\n\t  correct: %dh min.\t%dw min.", LINES, COLS, minLines, wallsWidth+30);
         exit_s(msg, 'e'); //if screen is smaller than minimum puts error message to log file and close app
@@ -328,40 +359,64 @@ void bonus::shoot () {
 
 void bonus::hpUp () {
     global_player_x -= hpUpBonus; //puts player 5 lines above
+    if (global_player_x <= 0) global_player_x = 0;
     points += (float)difficulty*difficulty;
 }
 
 void bonus::hpDown () {
-    global_player_x += hpDownBonus; //puts player 5 lines below
+    if (bonus::vulnerable) global_player_x += hpDownBonus; //puts player 5 lines below
+}
+
+void bonus::invulnerability () {
+    startInvulnerability = counter;
+    bonus::vulnerable = false;
+    return;
 }
 
 void bonus::generateBonus () {
-    int bonus_x = leftWall + rand()%wallsWidth; //generate point inside walls
-    switch (rand()%3) { //generates bonus to place
+    int bonus_x;
+    do {
+        bonus_x = leftWall + rand()%wallsWidth + 1; //generate new point inside walls
+        move (0, bonus_x);
+    } while (inch() == obstacleChar);
+    switch (rand()%20) { //generates bonus to place
         case 0:
+        case 1:
+        case 2:
             mvaddch(0, bonus_x, bonus::shootChar | COLOR_PAIR(color::cyan));
             break;
-        case 1:
+        case 3:
+        case 4:
+        case 5:
             mvaddch(0, bonus_x, bonus::hpUpChar | COLOR_PAIR(color::green));
             break;
-        case 2:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
             mvaddch(0, bonus_x, bonus::hpDownChar | COLOR_PAIR(color::red));
+            break;
+        case 13:
+            mvaddch(0, bonus_x, bonus::invulnerabilityChar | COLOR_PAIR(color::yellow));
             break;
         default:
             break;
     }
 }
 
-bool isPause () {
+bool isPause (void) {
     if (pauseFlag) {
-        mvprintw (LINES/2,   leftWall - 13, "Paused      ");
-        mvprintw (LINES/2+1, leftWall - 13, "            ");
+        mvprintw (LINES/2+6,   leftWall - 13, "Paused      ");
+        mvprintw (LINES/2+7, leftWall - 13, "            ");
         return true;
     }
     else {
-        mvprintw (LINES/2-1, leftWall - 13, "Space   ");
-        mvprintw (LINES/2,   leftWall - 13, "to pause");
-        mvprintw (LINES/2+1, leftWall - 13, "        ");
+        mvprintw (LINES/2+5, leftWall - 13, "Space   ");
+        mvprintw (LINES/2+6, leftWall - 13, "to pause");
+        mvprintw (LINES/2+7, leftWall - 13, "        ");
         return false;
     }
 }
@@ -437,6 +492,7 @@ void music_init_s (void) {
     char hp_down[] = "music/beep2.mp3";
     char shoot[] = "music/shoot1.mp3";
     char lvl[] = "music/level1.mp3";
+    char no_impact[] = "music/beep3.mp3";
 
     switch (rand()%2) {
     case 0:
@@ -451,6 +507,7 @@ void music_init_s (void) {
     hp_down_stream = BASS_StreamCreateFile(FALSE, hp_down, 0, 0, 0);
     shoot_stream = BASS_StreamCreateFile(FALSE, shoot, 0, 0, 0);
     lvl_stream = BASS_StreamCreateFile(FALSE, lvl, 0, 0, 0);
+    no_impact_stream = BASS_StreamCreateFile(FALSE, no_impact, 0, 0, 0);
 
     if (!back_stream) exit_s((char*)"background BASS stream err", 'e');
     if (!game_over_stream) exit_s((char*)"gameover BASS stream err", 'e');
@@ -458,8 +515,24 @@ void music_init_s (void) {
     if (!hp_down_stream) exit_s((char*)"hpdown BASS stream err", 'e');
     if (!shoot_stream) exit_s((char*)"shoot BASS stream err", 'e');
     if (!lvl_stream) exit_s((char*)"lvl BASS stream err", 'e');
+    if (!no_impact_stream) exit_s((char*)"noimpact BASS stream err", 'e');
 
-    BASS_ChannelPlay(back_stream,TRUE);
+    BASS_ChannelSetAttribute(no_impact_stream, BASS_ATTRIB_VOL, 0.5f);
+}
+
+void music_stop_s (void) {
+    BASS_ChannelStop(back_stream);
+    BASS_StreamFree(back_stream);
+    BASS_ChannelStop(hp_up_stream);
+    BASS_StreamFree(hp_up_stream);
+    BASS_ChannelStop(hp_down_stream);
+    BASS_StreamFree(hp_down_stream);
+    BASS_ChannelStop(shoot_stream);
+    BASS_StreamFree(shoot_stream);
+    BASS_ChannelStop(lvl_stream);
+    BASS_StreamFree(lvl_stream);
+    BASS_ChannelStop(no_impact_stream);
+    BASS_StreamFree(no_impact_stream);
 }
 
 void music_gameover (void) {
@@ -475,7 +548,7 @@ void print_score (void) {
     mvprintw (LINES/2 + 1, COLS/2 - 15, "   or press 'r' to restart   ");
 }
 
-int scoreAndExit() {
+int scoreAndExit (void) {
     char exitkey; //temp variable to store user key
     print_score();
     while (tolower(exitkey = getch()) != 'q') if (exitkey == 'r') return 1; //awaits for 'q' to  exit
