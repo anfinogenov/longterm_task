@@ -8,7 +8,6 @@
 #include <string>
 #include <cctype>
 #include <pthread.h>
-#include <unistd.h>
 #include "bass.h"
 
 const char playerChar     = 'A';
@@ -66,11 +65,12 @@ int     scoreAndExit (void);
 bool    isPause (void);
 
 namespace bonus {
-    static int rate = 10;
+    static int rate = 9;
 
     const int shootChar = 'S';
     void shoot (void);
     static int shots = 0;
+    const int shootLen = minLines;
 
     const int hpUpChar = 'U';
     const int hpUpBonus = 5;
@@ -210,15 +210,18 @@ int movePlayer (const int & key) {
     int new_coord; //temp variable to store coordinate where player wants to move in
     switch (key) {
         case KEY_RIGHT:
+        case 'd':
             new_coord = global_player_y + 1;
             if (!isWall(global_player_x, new_coord)) //checks if there is no wall
                 global_player_y = new_coord;
             break;
         case KEY_LEFT:
+        case 'a':
             new_coord = global_player_y - 1;
             if (!isWall(global_player_x, new_coord))
                 global_player_y = new_coord;
             break;
+        case KEY_UP:
         case 's':
             if (bonus::shots >= 1) {
                 bonus::shoot();
@@ -346,9 +349,9 @@ void logCounter () { //logs lines counter and current points to log file
 }
 
 void bonus::shoot () {
-    for (int i = global_player_x-1; i > 0; i--) {
+    for (int i = 0; i < bonus::shootLen; i++) {
         for (int y = global_player_y-1; y <= global_player_y+1; y++) {
-            move (i, y);
+            move (global_player_x-1-i, y);
             if(inch() == obstacleChar) { //clears vertical 3-char-wide line on screen
                 points += (float)difficulty; //and gives points for every obstacle
                 addch (' ');
@@ -485,8 +488,8 @@ void music_init_s (void) {
     if (!BASS_Init (-1, 22050, BASS_DEVICE_3D , 0, NULL))
         exit_s((char*)"BASS init failure", 'e');
 
-    char background1[] = "music/background1.mp3";
-    char background2[] = "music/background2.mp3";
+    char background[23];
+    sprintf(background, "music/background%d.mp3", rand()%3+1);
     char game_over[] = "music/off1.mp3";
     char hp_up[] = "music/beep1.mp3";
     char hp_down[] = "music/beep2.mp3";
@@ -494,14 +497,7 @@ void music_init_s (void) {
     char lvl[] = "music/level1.mp3";
     char no_impact[] = "music/beep3.mp3";
 
-    switch (rand()%2) {
-    case 0:
-        back_stream = BASS_StreamCreateFile(FALSE, background1, 0, 0, 0);
-        break;
-    case 1:
-        back_stream = BASS_StreamCreateFile(FALSE, background2, 0, 0, 0);
-        break;
-    }
+    back_stream = BASS_StreamCreateFile(FALSE, background, 0, 0, 0);
     game_over_stream = BASS_StreamCreateFile(FALSE, game_over, 0, 0, 0);
     hp_up_stream = BASS_StreamCreateFile(FALSE, hp_up, 0, 0, 0);
     hp_down_stream = BASS_StreamCreateFile(FALSE, hp_down, 0, 0, 0);
