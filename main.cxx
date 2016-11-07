@@ -351,7 +351,7 @@ void logCounter () { //logs lines counter and current points to log file
 void bonus::shoot () {
     for (int i = 0; i < bonus::shootLen; i++) {
         for (int y = global_player_y-1; y <= global_player_y+1; y++) {
-            move (global_player_x-1-i, y);
+            move (global_player_x-i, y);
             if(inch() == obstacleChar) { //clears vertical 3-char-wide line on screen
                 points += (float)difficulty; //and gives points for every obstacle
                 addch (' ');
@@ -412,7 +412,7 @@ void bonus::generateBonus () {
 
 bool isPause (void) {
     if (pauseFlag) {
-        mvprintw (LINES/2+6,   leftWall - 13, "Paused      ");
+        mvprintw (LINES/2+6, leftWall - 13, "Paused      ");
         mvprintw (LINES/2+7, leftWall - 13, "            ");
         return true;
     }
