@@ -37,6 +37,7 @@ static int counter = 0;
 static float points = 0;
 static bool exitFlag = false;
 static bool pauseFlag = false;
+static bool music;
 
 HSTREAM back_stream, game_over_stream, hp_up_stream, hp_down_stream;
 HSTREAM no_impact_stream, shoot_stream, lvl_stream;
@@ -47,7 +48,7 @@ void    log_open_s (void);
 void    ncurses_init_s (void);
 void    variable_init (void);
 void    exit_s (char*, char);
-void    music_init_s (void);
+bool    music_init_s (void);
 void    music_gameover (void);
 void    music_stop_s (void);
 
@@ -95,7 +96,7 @@ int main () {
     log_open_s();
     ncurses_init_s();
     variable_init();
-    music_init_s();
+    music = music_init_s();
 
     int local_player_x = global_player_x;
     int local_player_y = global_player_y;
@@ -108,12 +109,12 @@ int main () {
     clear();
     log_out("main logic starts", 'n');
     while (!exitFlag) {
-        if (!BASS_ChannelIsActive(back_stream)) BASS_ChannelPlay(back_stream,TRUE);
+        if (music && !BASS_ChannelIsActive(back_stream)) BASS_ChannelPlay(back_stream,TRUE);
         if (startLines != LINES || startCols != COLS) exit_s((char*)"changed screen size", 'e');
         if (!isPause()) {
             if (!(counter % 300)) { //if counter%300 == 0 increase difficulty
                 clear();
-                BASS_ChannelPlay(lvl_stream,TRUE);
+                if(music) BASS_ChannelPlay(lvl_stream,TRUE);
                 mvprintw(counterFirstLn+3, rightWall + 3, "Level %d!", ++difficulty);
                 bonus::shots++;
                 char msg[27] = {0};
@@ -138,10 +139,12 @@ int main () {
     }
     log_out("main logic ends", 'n');
     pthread_cancel(move_thread);
-    BASS_ChannelStop(back_stream);
-    BASS_StreamFree(back_stream);
-    music_gameover();
-    music_stop_s();
+    if (music) {
+        BASS_ChannelStop(back_stream);
+        BASS_StreamFree(back_stream);
+        music_gameover();
+        music_stop_s();
+    }
     if(scoreAndExit()) {
         endwin();
         logCounter();
@@ -176,17 +179,17 @@ void checkPlayer (int & local_x, int & local_y) {
             case bonus::hpUpChar:
                 addch(' ');
                 bonus::hpUp();
-                BASS_ChannelPlay(hp_up_stream,TRUE);
+                if(music) BASS_ChannelPlay(hp_up_stream,TRUE);
                 break;
             case bonus::hpDownChar:
                 addch(' ');
                 bonus::hpDown();
-                BASS_ChannelPlay(hp_down_stream,TRUE);
+                if(music) BASS_ChannelPlay(hp_down_stream,TRUE);
                 break;
             case bonus::shootChar:
                 addch(' ');
                 bonus::shots++;
-                BASS_ChannelPlay(hp_up_stream,TRUE);
+                if(music) BASS_ChannelPlay(hp_up_stream,TRUE);
                 break;
             case bonus::invulnerabilityChar:
                 addch(' ');
@@ -225,7 +228,7 @@ int movePlayer (const int & key) {
         case 's':
             if (bonus::shots >= 1) {
                 bonus::shoot();
-                BASS_ChannelPlay(shoot_stream,TRUE);
+                if(music) BASS_ChannelPlay(shoot_stream,TRUE);
                 bonus::shots--;
             }
         default: break;
@@ -288,11 +291,11 @@ void insertCounter () {
     mvprintw(counterFirstLn+16, leftWall - 13, "%d", 300 - counter%300);
 
     if (!bonus::vulnerable && (bonus::startInvulnerability + bonus::no_impact_duration - counter) > 0) {
-        if (!BASS_ChannelIsActive(no_impact_stream)) BASS_ChannelPlay(no_impact_stream, TRUE);
+        if (music && !BASS_ChannelIsActive(no_impact_stream)) BASS_ChannelPlay(no_impact_stream, TRUE);
         mvprintw(counterFirstLn, rightWall + 2, "No impact for:");
         mvprintw(counterFirstLn+1, rightWall + 2, "%d", bonus::startInvulnerability + bonus::no_impact_duration - counter);
     }
-    else BASS_ChannelStop(no_impact_stream);
+    else if (music) BASS_ChannelStop(no_impact_stream);
     return;
 }
 
@@ -482,11 +485,15 @@ void exit_s (char* msg, char msg_type) {
     exit(1);
 }
 
-void music_init_s (void) {
-    if (HIWORD(BASS_GetVersion())!=BASSVERSION)
-        exit_s((char*)"BASS version err", 'e');
-    if (!BASS_Init (-1, 22050, BASS_DEVICE_3D , 0, NULL))
-        exit_s((char*)"BASS init failure", 'e');
+bool music_init_s (void) {
+    if (HIWORD(BASS_GetVersion())!=BASSVERSION) {
+        log_out((char*)"BASS version err, sounds off", 'w');
+        return false;
+    }
+    if (!BASS_Init (-1, 22050, BASS_DEVICE_3D , 0, NULL)) {
+        log_out((char*)"BASS init failure, sounds off", 'w');
+        return false;
+    }
 
     char background[23];
     sprintf(background, "music/background%d.mp3", rand()%3+1);
@@ -505,18 +512,19 @@ void music_init_s (void) {
     lvl_stream = BASS_StreamCreateFile(FALSE, lvl, 0, 0, 0);
     no_impact_stream = BASS_StreamCreateFile(FALSE, no_impact, 0, 0, 0);
 
-    if (!back_stream) exit_s((char*)"background BASS stream err", 'e');
-    if (!game_over_stream) exit_s((char*)"gameover BASS stream err", 'e');
-    if (!hp_up_stream) exit_s((char*)"hpup BASS stream err", 'e');
-    if (!hp_down_stream) exit_s((char*)"hpdown BASS stream err", 'e');
-    if (!shoot_stream) exit_s((char*)"shoot BASS stream err", 'e');
-    if (!lvl_stream) exit_s((char*)"lvl BASS stream err", 'e');
-    if (!no_impact_stream) exit_s((char*)"noimpact BASS stream err", 'e');
+    if (!back_stream) { log_out((char*)"background BASS stream err", 'e'); return false; }
+    if (!game_over_stream) { log_out((char*)"gameover BASS stream err", 'e'); return false; }
+    if (!hp_up_stream) { log_out((char*)"hpup BASS stream err", 'e'); return false; }
+    if (!hp_down_stream) { log_out((char*)"hpdown BASS stream err", 'e'); return false; }
+    if (!shoot_stream) { log_out((char*)"shoot BASS stream err", 'e'); return false; }
+    if (!lvl_stream) { log_out((char*)"lvl BASS stream err", 'e'); return false; }
+    if (!no_impact_stream) { log_out((char*)"noimpact BASS stream err", 'e'); return false; }
 
     BASS_ChannelSetAttribute(no_impact_stream, BASS_ATTRIB_VOL, 0.5f);
+    return true;
 }
 
-void music_stop_s (void) {
+void music_stop_s(void) {
     BASS_ChannelStop(back_stream);
     BASS_StreamFree(back_stream);
     BASS_ChannelStop(hp_up_stream);
