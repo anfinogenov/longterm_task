@@ -32,7 +32,7 @@ namespace color {
 static std::ofstream fout;
 static int global_player_x = 0;
 static int global_player_y = 0;
-static int difficulty = 1;
+static int difficulty = 0;
 static int counter = 0;
 static float points = 0;
 static bool exitFlag = false;
