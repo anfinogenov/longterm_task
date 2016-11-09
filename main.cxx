@@ -32,7 +32,7 @@ namespace color {
 static std::ofstream fout;
 static int global_player_x = 0;
 static int global_player_y = 0;
-static int difficulty = 0;
+static int difficulty = 1;
 static int counter = 0;
 static float points = 0;
 static bool exitFlag = false;
@@ -131,6 +131,7 @@ int main () {
                 local_player_x = global_player_x;
                 local_player_y = global_player_y; //changes player coords if not equal
             }
+            checkPlayer(local_player_x, local_player_y);
             mvaddch(local_player_x, local_player_y, playerChar | A_BOLD); //prints new player
         }
         refresh(); //put changes on screen
