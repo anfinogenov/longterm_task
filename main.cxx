@@ -126,12 +126,11 @@ int main () {
             mvaddch(local_player_x, local_player_y, ' '); //erases old player
             printWalls(); //adds walls to refresh buffer
             refresh(); //puts buffer on screen
-            checkPlayer(local_player_x, local_player_y); //checks if there are any collisions with player
+            checkPlayer(global_player_x, global_player_y); //checks if there are any collisions with player
             if (local_player_x != global_player_x || local_player_y != global_player_y) {
                 local_player_x = global_player_x;
                 local_player_y = global_player_y; //changes player coords if not equal
             }
-            checkPlayer(local_player_x, local_player_y);
             mvaddch(local_player_x, local_player_y, playerChar | A_BOLD); //prints new player
         }
         refresh(); //put changes on screen
@@ -481,7 +480,7 @@ void exit_s (char* msg, char msg_type) {
     log_out(msg, msg_type);
     log_out("", 'q');
     fout.close();
-    BASS_Free();
+    if(music)BASS_Free();
     printf("\x1b[0m");
     exit(1);
 }
