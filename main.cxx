@@ -158,7 +158,8 @@ int main () {
 
 void* multithread_movement (void* arg) {
     int key;
-    while (key = getch()) {
+    while (1) {
+	key = getch();
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
         if (!pauseFlag) movePlayer (key); //disable moving if paused
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
