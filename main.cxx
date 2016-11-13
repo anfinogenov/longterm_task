@@ -159,7 +159,7 @@ int main () {
 void* multithread_movement (void* arg) {
     int key;
     while (1) {
-	key = getch();
+        key = getch();
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
         if (!pauseFlag) movePlayer (key); //disable moving if paused
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -416,8 +416,8 @@ void bonus::generateBonus () {
 
 bool isPause (void) {
     if (pauseFlag) {
-        mvprintw (LINES/2+6, leftWall - 13, "Paused      ");
-        mvprintw (LINES/2+7, leftWall - 13, "            ");
+        mvprintw (LINES/2+6, leftWall - 13, "Paused  ");
+        mvprintw (LINES/2+7, leftWall - 13, "        ");
         return true;
     }
     else {
@@ -522,6 +522,7 @@ bool music_init_s (void) {
     if (!no_impact_stream) { log_out((char*)"noimpact BASS stream err", 'e'); return false; }
 
     BASS_ChannelSetAttribute(no_impact_stream, BASS_ATTRIB_VOL, 0.5f);
+    log_out("sounds is OK", 'n');
     return true;
 }
 
